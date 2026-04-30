@@ -1,0 +1,16 @@
+<div class="panel" id="map-panel">
+  <div class="panel-tabs">
+    <button
+      class="tab"
+      hx-get="/panels/notes/"
+      hx-target="#map-panel"
+      hx-swap="outerHTML"
+      hx-trigger="click, swap-to-notes"
+      data-trigger="swap-to-notes"
+    >
+      Notes
+    </button>
+    <button class="tab active">Map</button>
+  </div>
+  <div id="map-container" style="flex: 1; min-height: 0"></div>
+</div>

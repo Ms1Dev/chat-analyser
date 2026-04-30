@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: chat_analyser
+      POSTGRES_USER: chat_analyser
+      POSTGRES_PASSWORD: chat_analyser
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chat_analyser"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    command: sh -c "python manage.py migrate --no-input && gunicorn chat_analyser.wsgi:application --bind 0.0.0.0:8000 --worker-class gthread --workers 1 --threads 50 --timeout 0"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DEBUG: "true"
+      DATABASE_URL: postgres://chat_analyser:chat_analyser@db:5432/chat_analyser
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
