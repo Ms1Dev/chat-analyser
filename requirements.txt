@@ -3,3 +3,4 @@ psycopg2-binary>=2.9
 gunicorn>=21.0
 openai>=1.0
 whitenoise>=6.0
+django-allauth>=65.0

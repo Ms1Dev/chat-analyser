@@ -1,5 +1,6 @@
 import json
 
+from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
@@ -7,6 +8,7 @@ from django.views.decorators.http import require_http_methods
 from .models import Note, Conversation, Message
 
 
+@login_required
 def index(request):
     return render(request, 'notes/index.html')
 

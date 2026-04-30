@@ -23,9 +23,11 @@
       >
       <div style="display: flex; gap: 6px; align-items: center">
         {% block topbar_actions %}{% endblock %}
-        <button class="btn-icon" id="dark-toggle" title="Toggle dark mode">
-          ☽
-        </button>
+        <button class="btn-icon" id="dark-toggle" title="Toggle dark mode">☽</button>
+        <form method="post" action="{% url 'account_logout' %}" style="margin:0">
+          {% csrf_token %}
+          <button type="submit" class="btn-icon" title="Sign out">⏻</button>
+        </form>
       </div>
     </div>
 
