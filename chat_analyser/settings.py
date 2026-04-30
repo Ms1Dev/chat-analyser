@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.ai',
     'apps.relay',
+    'django_browser_reload',
 ]
 
 SITE_ID = 1
@@ -63,6 +64,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'django_browser_reload.middleware.BrowserReloadMiddleware',
 ]
 
 ROOT_URLCONF = 'chat_analyser.urls'

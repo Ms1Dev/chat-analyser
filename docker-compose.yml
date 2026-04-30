@@ -15,7 +15,7 @@ services:
 
   web:
     build: .
-    command: sh -c "python manage.py migrate --no-input && gunicorn chat_analyser.wsgi:application --bind 0.0.0.0:8000 --worker-class gthread --workers 1 --threads 50 --timeout 0"
+    command: sh -c "python manage.py migrate --no-input && python manage.py runserver 0.0.0.0:8000"
     env_file:
       - .env
     volumes:

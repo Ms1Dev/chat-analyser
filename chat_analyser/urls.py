@@ -22,4 +22,5 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('', include('apps.ai.urls')),
     path('relay/', include('apps.relay.urls')),
+    path('__reload__/', include('django_browser_reload.urls')),
 ]

@@ -4,3 +4,4 @@ gunicorn>=21.0
 openai>=1.0
 whitenoise>=6.0
 django-allauth>=65.0
+django-browser-reload>=1.0
