@@ -19,9 +19,9 @@ def get_client() -> OpenAI:
     return _client
 
 
-def _execute(name: str, arguments: dict) -> str:
+def _execute(name: str, arguments: dict, user_id: int) -> str:
     if name in FRONTEND_TOOL_NAMES:
-        publish({"type": "tool_call", "tool": name, "args": arguments})
+        publish(user_id, {"type": "tool_call", "tool": name, "args": arguments})
         return json.dumps({"status": "dispatched"})
     return execute_tool(name, arguments)
 
@@ -36,7 +36,7 @@ To manage notes use: list_notes, add_note, delete_note.
 After any add or delete, always call refresh_note_list so the UI updates."""
 
 
-def stream_response(history: list[dict]) -> Generator[str, None, str]:
+def stream_response(history: list[dict], user_id: int) -> Generator[str, None, str]:
     """Stream an LLM response, handling tool calls transparently.
 
     Yields text chunks as they arrive and returns the full assembled response.
@@ -96,7 +96,7 @@ def stream_response(history: list[dict]) -> Generator[str, None, str]:
                 arguments = json.loads(tc["arguments"])
             except json.JSONDecodeError:
                 arguments = {}
-            result = _execute(tc["name"], arguments)
+            result = _execute(tc["name"], arguments, user_id)
             messages.append({
                 "role": "tool",
                 "tool_call_id": tc["id"],

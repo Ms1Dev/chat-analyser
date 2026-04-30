@@ -2,22 +2,27 @@ import threading
 from queue import Queue
 
 _lock = threading.Lock()
-_clients: list[Queue] = []
+_clients: dict[int, list[Queue]] = {}
 
 
-def register(q: Queue) -> None:
+def register(user_id: int, q: Queue) -> None:
     with _lock:
-        _clients.append(q)
+        _clients.setdefault(user_id, []).append(q)
 
 
-def unregister(q: Queue) -> None:
+def unregister(user_id: int, q: Queue) -> None:
     with _lock:
-        if q in _clients:
-            _clients.remove(q)
+        if user_id in _clients:
+            try:
+                _clients[user_id].remove(q)
+            except ValueError:
+                pass
+            if not _clients[user_id]:
+                del _clients[user_id]
 
 
-def publish(event: dict) -> None:
+def publish(user_id: int, event: dict) -> None:
     with _lock:
-        clients = list(_clients)
+        clients = list(_clients.get(user_id, []))
     for q in clients:
         q.put(event)
