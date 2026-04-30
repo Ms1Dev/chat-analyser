@@ -14,6 +14,7 @@ def index(request):
     return render(request, 'ai/index.html')
 
 
+@login_required
 @require_POST
 def chat(request):
     try:
@@ -25,11 +26,11 @@ def chat(request):
 
     if conversation_id:
         try:
-            conversation = Conversation.objects.get(id=conversation_id)
+            conversation = Conversation.objects.get(id=conversation_id, user=request.user)
         except Conversation.DoesNotExist:
-            conversation = Conversation.objects.create()
+            conversation = Conversation.objects.create(user=request.user)
     else:
-        conversation = Conversation.objects.create()
+        conversation = Conversation.objects.create(user=request.user)
 
     Message.objects.create(conversation=conversation, role="user", content=message_text)
 
@@ -64,20 +65,23 @@ def chat(request):
     return resp
 
 
+@login_required
 def conversation_list(request):
-    convos = list(Conversation.objects.values('id', 'title'))
+    convos = list(Conversation.objects.filter(user=request.user).values('id', 'title'))
     return JsonResponse({'conversations': convos})
 
 
+@login_required
 @require_http_methods(['POST'])
 def conversation_create(request):
-    convo = Conversation.objects.create()
+    convo = Conversation.objects.create(user=request.user)
     return JsonResponse({'id': convo.id, 'title': convo.title})
 
 
+@login_required
 def conversation_messages(request, convo_id):
     try:
-        convo = Conversation.objects.get(id=convo_id)
+        convo = Conversation.objects.get(id=convo_id, user=request.user)
     except Conversation.DoesNotExist:
         return JsonResponse({'error': 'Not found'}, status=404)
     messages = list(convo.messages.values('id', 'role', 'content'))
