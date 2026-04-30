@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'apps.users',
-    'apps.notes',
     'apps.ai',
     'apps.relay',
 ]

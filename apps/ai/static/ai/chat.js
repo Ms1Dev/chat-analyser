@@ -5,7 +5,7 @@ let conversations = [];
 let currentConversationId = null;
 
 async function loadConversations() {
-  const data = await api('/api/conversations/');
+  const data = await api('/chat/conversations/');
   conversations = data.conversations;
   renderConversations();
 }
@@ -27,7 +27,7 @@ function renderConversations() {
 async function selectConversation(id) {
   currentConversationId = id;
   renderConversations();
-  const data = await api(`/api/conversations/${id}/messages/`);
+  const data = await api(`/chat/conversations/${id}/messages/`);
   const msgs = document.getElementById('chat-messages');
   msgs.innerHTML = '';
   data.messages.forEach(m => appendMessage(m.role, m.content));
@@ -71,7 +71,7 @@ async function sendMessage() {
     const body = { message };
     if (currentConversationId) body.conversation_id = currentConversationId;
 
-    const response = await fetch('/api/chat/', {
+    const response = await fetch('/chat/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
       body: JSON.stringify(body),

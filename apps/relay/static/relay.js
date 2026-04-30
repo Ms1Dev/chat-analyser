@@ -33,7 +33,7 @@ export class Relay {
   _startSSE() {
     // navigator.locks ensures only one tab holds the SSE connection
     navigator.locks.request('relay_lock', () => {
-      const es = new EventSource('/api/events/')
+      const es = new EventSource('/relay/events/')
       let release
       const held = new Promise((resolve) => { release = resolve })
 
