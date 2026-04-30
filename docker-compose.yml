@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -20,6 +20,7 @@ services:
       - .env
     volumes:
       - .:/app
+      - /app/.venv
     ports:
       - "8000:8000"
     environment:

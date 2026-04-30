@@ -4,6 +4,8 @@ from typing import Generator
 
 from openai import OpenAI
 
+from apps.ai.memory import memory
+
 from apps.relay.events import publish
 from .tools import TOOLS, execute_tool
 from .frontend_tools import FRONTEND_TOOLS, FRONTEND_TOOL_NAMES
@@ -30,14 +32,20 @@ SYSTEM_PROMPT = """You are a helpful assistant."""
 
 
 def stream_response(history: list[dict], user_id: int) -> Generator[str, None, str]:
-    """Stream an LLM response, handling tool calls transparently.
-
-    Yields text chunks as they arrive and returns the full assembled response.
-    """
     client = get_client()
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + list(history)
+    mem_user_id = f"user_{user_id}"
     all_tools = TOOLS + FRONTEND_TOOLS
     full_response = []
+
+    user_message = history[-1]["content"] if history else ""
+    recalled = memory.search(user_message, filters={"user_id": mem_user_id})
+    print("recalled:", recalled)
+    memory_context = "\n".join(m["memory"] for m in recalled.get("results", []))
+    system = SYSTEM_PROMPT
+    if memory_context:
+        system += f"\n\nWhat you remember about this user:\n{memory_context}"
+
+    messages = [{"role": "system", "content": system}] + list(history)
 
     while True:
         stream = client.chat.completions.create(
@@ -96,4 +104,12 @@ def stream_response(history: list[dict], user_id: int) -> Generator[str, None, s
                 "content": result,
             })
 
-    return "".join(full_response)
+    assistant_reply = "".join(full_response)
+    memory.add(
+        [
+            {"role": "user", "content": user_message},
+            {"role": "assistant", "content": assistant_reply},
+        ],
+        user_id=mem_user_id,
+    )
+    return assistant_reply

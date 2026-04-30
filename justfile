@@ -7,9 +7,9 @@ migrate:
     docker compose run --rm web python manage.py migrate
 
 
-uv arg:
-	docker compose run --rm web uv {{ arg }}
+uv *args:
+	docker compose run --rm web uv {{ args }}
 
-manage arg:
-	docker compose run --rm web uv run manage.py {{ arg }}
+manage *args:
+	docker compose run --rm web uv run manage.py {{ args }}
 
