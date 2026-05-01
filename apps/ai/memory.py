@@ -24,4 +24,18 @@ memory = Memory.from_config({
         "provider": "openai",
         "config": {"model": "text-embedding-3-small"},
     },
+    "custom_instructions": """
+    NEVER STORE:
+    - Social Security Numbers
+    - Insurance policy numbers
+    - Credit card information
+    - Full addresses
+    - Phone numbers
+
+    Exclude:
+    - Greetings and filler
+    - Casual chatter
+    - Hypotheticals unless planning related
+    """
+
 })
