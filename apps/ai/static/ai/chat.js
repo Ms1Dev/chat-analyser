@@ -65,6 +65,14 @@ async function sendMessage() {
   btn.disabled = true;
 
   appendMessage('user', message);
+
+  const thinkingEl = document.createElement('details');
+  thinkingEl.className = 'thinking-block';
+  thinkingEl.open = true;
+  thinkingEl.innerHTML = '<summary>Thinking…</summary><div class="thinking-content"></div>';
+  document.getElementById('chat-messages').appendChild(thinkingEl);
+  const thinkingContent = thinkingEl.querySelector('.thinking-content');
+
   const assistantDiv = appendMessage('assistant', '');
 
   try {
@@ -80,6 +88,7 @@ async function sendMessage() {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let textStarted = false;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -95,13 +104,24 @@ async function sendMessage() {
         try {
           const data = JSON.parse(payload);
           if (data.conversation_id) currentConversationId = data.conversation_id;
+          if (data.thinking) {
+            thinkingContent.textContent += data.thinking;
+            scrollChat();
+          }
           if (data.text) {
+            if (!textStarted) {
+              textStarted = true;
+              thinkingEl.open = false;
+              thinkingEl.querySelector('summary').textContent = 'Thinking';
+            }
             assistantDiv.textContent += data.text;
             scrollChat();
           }
         } catch (e) { console.warn('SSE parse error:', e); }
       }
     }
+
+    if (!thinkingContent.textContent) thinkingEl.remove();
   } catch (err) {
     assistantDiv.textContent = 'Error: ' + err.message;
   }

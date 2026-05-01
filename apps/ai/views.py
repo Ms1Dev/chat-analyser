@@ -47,9 +47,12 @@ def chat(request):
         yield f"data: {json.dumps({'conversation_id': conversation.id})}\n\n"
 
         full_response = []
-        for text in stream_response(history, request.user.id):
-            full_response.append(text)
-            yield f"data: {json.dumps({'text': text})}\n\n"
+        for kind, chunk in stream_response(history, request.user.id):
+            if kind == "thinking":
+                yield f"data: {json.dumps({'thinking': chunk})}\n\n"
+            else:
+                full_response.append(chunk)
+                yield f"data: {json.dumps({'text': chunk})}\n\n"
 
         Message.objects.create(
             conversation=conversation,

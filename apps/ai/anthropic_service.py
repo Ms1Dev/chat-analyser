@@ -74,11 +74,16 @@ def stream_response(history: list[dict], user_id: int) -> Generator[str, None, s
             max_tokens=8096,
             system=system,
             messages=messages,
+            thinking={"type": "adaptive", "display": "summarized"},
             **kwargs,
         ) as stream:
-            for text in stream.text_stream:
-                full_response.append(text)
-                yield text
+            for event in stream:
+                if event.type == "content_block_delta":
+                    if event.delta.type == "thinking_delta":
+                        yield ("thinking", event.delta.thinking)
+                    elif event.delta.type == "text_delta":
+                        full_response.append(event.delta.text)
+                        yield ("text", event.delta.text)
             response = stream.get_final_message()
 
         if response.stop_reason != "tool_use":
