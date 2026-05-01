@@ -32,7 +32,7 @@ def chat(request):
     else:
         conversation = Conversation.objects.create(user=request.user)
 
-    Message.objects.create(conversation=conversation, role="user", content=message_text)
+    message = Message.objects.create(conversation=conversation, role="user", content=message_text)
 
     if conversation.title == "New Chat":
         conversation.title = message_text[:50]
@@ -47,7 +47,7 @@ def chat(request):
         yield f"data: {json.dumps({'conversation_id': conversation.id})}\n\n"
 
         full_response = []
-        for kind, chunk in stream_response(history, request.user.id):
+        for kind, chunk in stream_response(history, request.user.id, message.id):
             if kind == "thinking":
                 yield f"data: {json.dumps({'thinking': chunk})}\n\n"
             else:

@@ -7,6 +7,8 @@ from apps.ai.memory import memory
 
 from .tools import TOOLS, execute_tool
 
+from apps.ai.models import Memory, Thought
+
 MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-7")
 _client = None
 
@@ -32,10 +34,20 @@ def call_tool(messages: list, block) -> None:
     })
 
 
-def get_context(message, user_id):
+def get_context(message, user_id, message_id):
     recalled = memory.search(message, filters={"user_id": user_id})
     print("recalled:", recalled)
-    memory_context = "\n".join(m["memory"] for m in recalled.get("results", []))
+
+    memories = []
+    for m in recalled.get("results", []):
+        Memory.objects.create(
+            id=m["id"],
+            message_id=message_id,
+            hash=m.get("hash", "")
+        )
+        memories.append(m.get("memory", ""))
+        
+    memory_context = "\n".join(memories)
     if memory_context:
         context_prompt = f"\n\nWhat you remember about this user:\n{memory_context}"
         print("context prompt:", context_prompt)
@@ -52,7 +64,7 @@ def update_memory(user_message, assistant_reply, user_id):
     )
 
 
-def stream_response(history: list[dict], user_id: int) -> Generator[str, None, str]:
+def stream_response(history: list[dict], user_id: int, message_id) -> Generator[str, None, str]:
     client = get_client()
     mem_user_id = f"user_{user_id}"
     full_response = []
@@ -60,7 +72,7 @@ def stream_response(history: list[dict], user_id: int) -> Generator[str, None, s
     user_message = history[-1]["content"] if history else ""
 
     system = SYSTEM_PROMPT
-    context = get_context(user_message, mem_user_id)
+    context = get_context(user_message, mem_user_id, message_id)
     if context:
         system += context
 
