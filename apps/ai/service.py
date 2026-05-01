@@ -6,13 +6,12 @@ from openai import OpenAI
 
 from apps.ai.memory import memory
 
-from apps.relay.events import publish
 from .tools import TOOLS, execute_tool
-from .frontend_tools import FRONTEND_TOOLS, FRONTEND_TOOL_NAMES
 
 MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 _client = None
 
+SYSTEM_PROMPT = """You are a helpful assistant."""
 
 def get_client() -> OpenAI:
     global _client
@@ -21,29 +20,47 @@ def get_client() -> OpenAI:
     return _client
 
 
-def _execute(name: str, arguments: dict, user_id: int) -> str:
-    if name in FRONTEND_TOOL_NAMES:
-        publish(user_id, {"type": "tool_call", "tool": name, "args": arguments})
-        return json.dumps({"status": "dispatched"})
-    return execute_tool(name, arguments)
+def call_tool(messages, tc):
+    try:
+        arguments = json.loads(tc["arguments"])
+    except json.JSONDecodeError:
+        arguments = {}
+    result = execute_tool(tc["name"], arguments)
+    messages.append({
+        "role": "tool",
+        "tool_call_id": tc["id"],
+        "content": result,
+    })
 
 
-SYSTEM_PROMPT = """You are a helpful assistant."""
+def get_context(message, user_id):
+    recalled = memory.search(message, filters={"user_id": user_id})
+    print("recalled:", recalled)
+    memory_context = "\n".join(m["memory"] for m in recalled.get("results", []))
+    if memory_context:
+        context_prompt = f"\n\nWhat you remember about this user:\n{memory_context}"
+        print("context prompt:", context_prompt)
+        return context_prompt
+    
+
+def update_memory(user_message, assistant_reply, user_id):
+    memory.add(
+        [
+            {"role": "user", "content": user_message},
+            {"role": "assistant", "content": assistant_reply},
+        ],
+        user_id=user_id,
+    )
 
 
 def stream_response(history: list[dict], user_id: int) -> Generator[str, None, str]:
     client = get_client()
     mem_user_id = f"user_{user_id}"
-    all_tools = TOOLS + FRONTEND_TOOLS
     full_response = []
 
     user_message = history[-1]["content"] if history else ""
-    recalled = memory.search(user_message, filters={"user_id": mem_user_id})
-    print("recalled:", recalled)
-    memory_context = "\n".join(m["memory"] for m in recalled.get("results", []))
-    system = SYSTEM_PROMPT
-    if memory_context:
-        system += f"\n\nWhat you remember about this user:\n{memory_context}"
+    
+    system = SYSTEM_PROMPT + get_context(user_message, mem_user_id)
 
     messages = [{"role": "system", "content": system}] + list(history)
 
@@ -52,7 +69,7 @@ def stream_response(history: list[dict], user_id: int) -> Generator[str, None, s
             model=MODEL,
             messages=messages,
             stream=True,
-            **({"tools": all_tools} if all_tools else {}),
+            *TOOLS,
         )
 
         text_chunks: list[str] = []
@@ -93,23 +110,10 @@ def stream_response(history: list[dict], user_id: int) -> Generator[str, None, s
         })
 
         for tc in tool_calls.values():
-            try:
-                arguments = json.loads(tc["arguments"])
-            except json.JSONDecodeError:
-                arguments = {}
-            result = _execute(tc["name"], arguments, user_id)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tc["id"],
-                "content": result,
-            })
+            call_tool(messages, tc, user_id)
 
     assistant_reply = "".join(full_response)
-    memory.add(
-        [
-            {"role": "user", "content": user_message},
-            {"role": "assistant", "content": assistant_reply},
-        ],
-        user_id=mem_user_id,
-    )
+
+    update_memory(user_message, assistant_reply, mem_user_id)
+
     return assistant_reply
