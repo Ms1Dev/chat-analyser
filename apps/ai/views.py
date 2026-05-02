@@ -6,7 +6,7 @@ from django.shortcuts import render
 from django.views.decorators.http import require_POST, require_http_methods
 
 from .models import Conversation, Message
-from .anthropic_service import stream_response
+from .providers import stream_response
 
 
 @login_required

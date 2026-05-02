@@ -13,7 +13,7 @@ TOOLS = [
 ]
 
 
-def execute_tool(name: str, arguments: dict) -> str:
+def execute_tool(name: str, _arguments: dict) -> str:
     if name == "get_current_timestamp":
         return datetime.now(timezone.utc).isoformat()
     raise ValueError(f"Unknown tool: {name}")
