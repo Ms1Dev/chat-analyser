@@ -27,11 +27,18 @@ class Message(models.Model):
 
 
 class Memory(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    memory_id = models.UUIDField(default=uuid.uuid4, editable=False)
     message = models.ForeignKey(Message, null=True, blank=True, on_delete=models.SET_NULL, related_name='memories')
     hash = models.TextField()
 
 class Thought(models.Model):
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='thoughts')
     content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ToolUse(models.Model):
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='tool_uses')
+    tool_name = models.CharField(max_length=255)
+    input_data = models.JSONField()
+    result = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

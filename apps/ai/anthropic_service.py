@@ -7,7 +7,7 @@ from apps.ai.memory import memory
 
 from .tools import TOOLS, execute_tool
 
-from apps.ai.models import Memory, Thought
+from apps.ai.models import Memory, Thought, ToolUse
 
 MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-7")
 _client = None
@@ -22,8 +22,14 @@ def get_client() -> anthropic.Anthropic:
     return _client
 
 
-def call_tool(messages: list, block) -> None:
+def call_tool(messages: list, block, message_id) -> None:
     result = execute_tool(block.name, block.input)
+    ToolUse.objects.create(
+        message_id=message_id,
+        tool_name=block.name,
+        input_data=block.input,
+        result=result,
+    )
     messages.append({
         "role": "user",
         "content": [{
@@ -36,12 +42,11 @@ def call_tool(messages: list, block) -> None:
 
 def get_context(message, user_id, message_id):
     recalled = memory.search(message, filters={"user_id": user_id})
-    print("recalled:", recalled)
 
     memories = []
     for m in recalled.get("results", []):
         Memory.objects.create(
-            id=m["id"],
+            memory_id=m["id"],
             message_id=message_id,
             hash=m.get("hash", "")
         )
@@ -50,7 +55,6 @@ def get_context(message, user_id, message_id):
     memory_context = "\n".join(memories)
     if memory_context:
         context_prompt = f"\n\nWhat you remember about this user:\n{memory_context}"
-        print("context prompt:", context_prompt)
         return context_prompt
 
 
@@ -64,7 +68,7 @@ def update_memory(user_message, assistant_reply, user_id):
     )
 
 
-def stream_response(history: list[dict], user_id: int, message_id) -> Generator[str, None, str]:
+def stream_response(history: list[dict], user_id: int, message_id) -> Generator[tuple, None, str]:
     client = get_client()
     mem_user_id = f"user_{user_id}"
     full_response = []
@@ -86,25 +90,37 @@ def stream_response(history: list[dict], user_id: int, message_id) -> Generator[
             max_tokens=8096,
             system=system,
             messages=messages,
-            thinking={"type": "adaptive", "display": "summarized"},
+            thinking={"type": "adaptive"},  # removed invalid "display" key
             **kwargs,
         ) as stream:
+            thinking_buffer = []  # accumulate thinking chunks
+
             for event in stream:
                 if event.type == "content_block_delta":
                     if event.delta.type == "thinking_delta":
+                        thinking_buffer.append(event.delta.thinking)
                         yield ("thinking", event.delta.thinking)
                     elif event.delta.type == "text_delta":
                         full_response.append(event.delta.text)
                         yield ("text", event.delta.text)
+                elif event.type == "content_block_stop":
+                    if thinking_buffer:
+                        Thought.objects.create(
+                            message_id=message_id,
+                            content="".join(thinking_buffer),
+                        )
+                        thinking_buffer = []
+
             response = stream.get_final_message()
 
         if response.stop_reason != "tool_use":
             break
 
+        # thinking blocks in response.content must be preserved unmodified
         tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
         messages.append({"role": "assistant", "content": response.content})
         for block in tool_use_blocks:
-            call_tool(messages, block)
+            call_tool(messages, block, message_id)
 
     assistant_reply = "".join(full_response)
     update_memory(user_message, assistant_reply, mem_user_id)
