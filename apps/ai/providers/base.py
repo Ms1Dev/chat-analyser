@@ -22,15 +22,15 @@ class BaseProvider(ABC):
         if context:
             self.system += context
 
-    def _persist_message(self, role: str, content: str) -> Message:
+    def _persist_message(self, role: str, content: str, model: str = "") -> Message:
         if self.conversation_id is None:
             raise ValueError("conversation_id is required to persist message")
-        message = Message.objects.create(
+        return Message.objects.create(
             conversation_id=self.conversation_id,
             role=role,
             content=content,
+            model=model,
         )
-        return message
 
     def _get_history(self):
         messages = Message.objects.filter(conversation_id=self.conversation_id).order_by("created_at")
