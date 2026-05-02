@@ -406,7 +406,7 @@ class BaseProviderTest(TestCase):
         with patch("apps.ai.providers.anthropic.anthropic.Anthropic"), \
              patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": [
-                {"id": mem_id, "memory": "user likes Python", "hash": "abc"}
+                {"id": mem_id, "memory": "user likes Python", "hash": "abc", "score": 1.0}
             ]}
             provider = AnthropicProvider("hello", conversation_id=convo.id)
         from apps.ai.models import Memory
@@ -418,7 +418,7 @@ class BaseProviderTest(TestCase):
         with patch("apps.ai.providers.anthropic.anthropic.Anthropic"), \
              patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": [
-                {"id": str(uuid.uuid4()), "memory": "user likes Python", "hash": "x"}
+                {"id": str(uuid.uuid4()), "memory": "user likes Python", "hash": "x", "score": 1.0}
             ]}
             provider = AnthropicProvider("hello", conversation_id=convo.id)
         self.assertIn("user likes Python", provider.system)

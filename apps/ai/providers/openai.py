@@ -7,12 +7,12 @@ from openai import OpenAI
 from apps.ai.models import Thought, ToolUse
 from apps.ai.tools import TOOLS, execute_tool
 
+from apps.ai import context_budget as cb
 from .base import BaseProvider
-
-MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 
 
 class OpenAIProvider(BaseProvider):
+    MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
     def _get_client(self) -> OpenAI:
         return OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
@@ -39,7 +39,7 @@ class OpenAIProvider(BaseProvider):
 
     def stream_response(self) -> Generator[tuple, None, str]:
         full_response = []
-        messages = self._get_history()
+        messages = cb.trim_history(self._get_history(), self.history_budget)
 
         openai_tools = self._get_tools(TOOLS) if TOOLS else []
         kwargs = {"tools": openai_tools} if openai_tools else {}
@@ -48,7 +48,7 @@ class OpenAIProvider(BaseProvider):
             thinking_buffer = []
 
             with self.client.responses.stream(
-                model=MODEL,
+                model=self.MODEL,
                 instructions=self.system,
                 input=messages,
                 **kwargs,
@@ -91,5 +91,5 @@ class OpenAIProvider(BaseProvider):
 
         assistant_reply = "".join(full_response)
         self.update_memory(self.message_content, assistant_reply, f"user_{self.user_id}")
-        self._persist_message(role="assistant", content=assistant_reply, model=MODEL)
+        self._persist_message(role="assistant", content=assistant_reply, model=self.MODEL)
         return assistant_reply

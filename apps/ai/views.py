@@ -5,8 +5,7 @@ from django.http import JsonResponse, StreamingHttpResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_POST, require_http_methods
 
-from .models import Conversation, Message
-from .providers import stream_response
+from .models import Conversation
 from .providers.anthropic import AnthropicProvider
 from .providers.openai import OpenAIProvider
 

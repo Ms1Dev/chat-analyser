@@ -6,12 +6,12 @@ import anthropic
 from apps.ai.models import Thought, ToolUse
 from apps.ai.tools import TOOLS, execute_tool
 
+from apps.ai import context_budget as cb
 from .base import BaseProvider
-
-MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 
 
 class AnthropicProvider(BaseProvider):
+    MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 
     def _get_client(self) -> anthropic.Anthropic:
         return anthropic.Anthropic()
@@ -41,13 +41,13 @@ class AnthropicProvider(BaseProvider):
 
     def stream_response(self) -> Generator[tuple, None, str]:
         full_response = []
-        messages = self._get_history()
+        messages = cb.trim_history(self._get_history(), self.history_budget)
 
         while True:
             kwargs = {"tools": self._get_tools(TOOLS)} if TOOLS else {}
 
             with self.client.messages.stream(
-                model=MODEL,
+                model=self.MODEL,
                 max_tokens=8096,
                 system=self.system,
                 messages=messages,
@@ -84,5 +84,5 @@ class AnthropicProvider(BaseProvider):
 
         assistant_reply = "".join(full_response)
         self.update_memory(self.message_content, assistant_reply, f"user_{self.user_id}")
-        self._persist_message(role="assistant", content=assistant_reply, model=MODEL)
+        self._persist_message(role="assistant", content=assistant_reply, model=self.MODEL)
         return assistant_reply
