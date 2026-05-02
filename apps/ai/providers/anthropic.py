@@ -36,6 +36,11 @@ class AnthropicProvider(BaseProvider):
             }],
         })
 
+    def _get_tools(self, tools):
+        return [
+            {**{k: v for k, v in t.items() if k != "parameters"}, "input_schema": t["parameters"]}
+            for t in tools
+        ]
 
     def stream_response(self) -> Generator[tuple, None, str]:
         full_response = []
@@ -43,7 +48,7 @@ class AnthropicProvider(BaseProvider):
         messages = list(self.history)
 
         while True:
-            kwargs = {"tools": TOOLS} if TOOLS else {}
+            kwargs = {"tools": self._get_tools(TOOLS)} if TOOLS else {}
 
             with self.client.messages.stream(
                 model=MODEL,

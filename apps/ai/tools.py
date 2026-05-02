@@ -4,7 +4,7 @@ TOOLS = [
     {
         "name": "get_current_timestamp",
         "description": "Returns the current UTC timestamp in ISO 8601 format.",
-        "input_schema": {
+        "parameters": {
             "type": "object",
             "properties": {},
             "required": [],

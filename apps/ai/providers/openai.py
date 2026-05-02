@@ -10,37 +10,31 @@ from apps.ai.tools import TOOLS, execute_tool
 from .base import BaseProvider
 
 MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
-def _to_openai_tools(tools: list[dict]) -> list[dict]:
-    return [
-        {
-            "type": "function",
-            "name": t["name"],
-            "description": t["description"],
-            "parameters": t["input_schema"],
-        }
-        for t in tools
-    ]
 
 
 class OpenAIProvider(BaseProvider):
     def _get_client(self) -> OpenAI:
         return OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    
+    def _get_tools(self, tools: list[dict]) -> list[dict]:
+        return [{"type": "function", **t} for t in tools]
 
-    def _call_tool(self, messages: list, block, message_id) -> None:
-        result = execute_tool(block.name, block.input)
+    def _call_tool(self, messages: list, item) -> None:
+        try:
+            arguments = json.loads(item.arguments)
+        except json.JSONDecodeError:
+            arguments = {}
+        result = execute_tool(item.name, arguments)
         ToolUse.objects.create(
-            message_id=message_id,
-            tool_name=block.name,
-            input_data=block.input,
+            message_id=self.message_id,
+            tool_name=item.name,
+            input_data=arguments,
             result=result,
         )
         messages.append({
-            "role": "user",
-            "content": [{
-                "type": "tool_result",
-                "tool_use_id": block.id,
-                "content": result,
-            }],
+            "type": "function_call_output",
+            "call_id": item.call_id,
+            "output": result,
         })
 
     def stream_response(self) -> Generator[tuple, None, str]:
@@ -48,7 +42,7 @@ class OpenAIProvider(BaseProvider):
         user_message = self.history[-1]["content"] if self.history else ""
         messages = list(self.history)
 
-        openai_tools = _to_openai_tools(TOOLS) if TOOLS else []
+        openai_tools = self._get_tools(TOOLS) if TOOLS else []
         kwargs = {"tools": openai_tools} if openai_tools else {}
 
         while True:
@@ -82,13 +76,19 @@ class OpenAIProvider(BaseProvider):
             if not tool_call_items:
                 break
 
-            messages += [item.model_dump() for item in response.output]
+            for item in response.output:
+                if item.type == "function_call":
+                    messages.append({
+                        "type": "function_call",
+                        "id": item.id,
+                        "call_id": item.call_id,
+                        "name": item.name,
+                        "arguments": item.arguments,
+                    })
+                else:
+                    messages.append({"type": item.type, "id": item.id, "text": getattr(item, "text", "")})
             for item in tool_call_items:
-                try:
-                    arguments = json.loads(item.arguments)
-                except json.JSONDecodeError:
-                    arguments = {}
-                self._call_tool(messages, type("Block", (), {"name": item.name, "input": arguments}), self.message_id)
+                self._call_tool(messages, item)
 
         assistant_reply = "".join(full_response)
         self.update_memory(user_message, assistant_reply, f"user_{self.user_id}")
