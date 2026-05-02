@@ -15,7 +15,7 @@ MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 class OpenAIProvider(BaseProvider):
     def _get_client(self) -> OpenAI:
         return OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-    
+
     def _get_tools(self, tools: list[dict]) -> list[dict]:
         return [{"type": "function", **t} for t in tools]
 
@@ -26,7 +26,7 @@ class OpenAIProvider(BaseProvider):
             arguments = {}
         result = execute_tool(item.name, arguments)
         ToolUse.objects.create(
-            message_id=self.message_id,
+            message_id=self.message.id,
             tool_name=item.name,
             input_data=arguments,
             result=result,
@@ -39,8 +39,7 @@ class OpenAIProvider(BaseProvider):
 
     def stream_response(self) -> Generator[tuple, None, str]:
         full_response = []
-        user_message = self.history[-1]["content"] if self.history else ""
-        messages = list(self.history)
+        messages = self._get_history()
 
         openai_tools = self._get_tools(TOOLS) if TOOLS else []
         kwargs = {"tools": openai_tools} if openai_tools else {}
@@ -61,7 +60,7 @@ class OpenAIProvider(BaseProvider):
                     elif event.type == "response.reasoning_summary_text.done":
                         if thinking_buffer:
                             Thought.objects.create(
-                                message_id=self.message_id,
+                                message_id=self.message.id,
                                 content="".join(thinking_buffer),
                             )
                             thinking_buffer = []
@@ -91,5 +90,5 @@ class OpenAIProvider(BaseProvider):
                 self._call_tool(messages, item)
 
         assistant_reply = "".join(full_response)
-        self.update_memory(user_message, assistant_reply, f"user_{self.user_id}")
+        self.update_memory(self.message_content, assistant_reply, f"user_{self.user_id}")
         return assistant_reply

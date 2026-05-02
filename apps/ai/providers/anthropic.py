@@ -11,15 +11,18 @@ from .base import BaseProvider
 MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 
 
-
 class AnthropicProvider(BaseProvider):
-    
+
     def _get_client(self) -> anthropic.Anthropic:
-        if self.client is None:
-            self.client = anthropic.Anthropic()
-        return self.client
-    
-    def _call_tool(self,messages: list, block, message_id) -> None:
+        return anthropic.Anthropic()
+
+    def _get_tools(self, tools):
+        return [
+            {**{k: v for k, v in t.items() if k != "parameters"}, "input_schema": t["parameters"]}
+            for t in tools
+        ]
+
+    def _call_tool(self, messages: list, block, message_id) -> None:
         result = execute_tool(block.name, block.input)
         ToolUse.objects.create(
             message_id=message_id,
@@ -36,16 +39,9 @@ class AnthropicProvider(BaseProvider):
             }],
         })
 
-    def _get_tools(self, tools):
-        return [
-            {**{k: v for k, v in t.items() if k != "parameters"}, "input_schema": t["parameters"]}
-            for t in tools
-        ]
-
     def stream_response(self) -> Generator[tuple, None, str]:
         full_response = []
-        user_message = self.history[-1]["content"] if self.history else ""
-        messages = list(self.history)
+        messages = self._get_history()
 
         while True:
             kwargs = {"tools": self._get_tools(TOOLS)} if TOOLS else {}
@@ -71,7 +67,7 @@ class AnthropicProvider(BaseProvider):
                     elif event.type == "content_block_stop":
                         if thinking_buffer:
                             Thought.objects.create(
-                                message_id=self.message_id,
+                                message_id=self.message.id,
                                 content="".join(thinking_buffer),
                             )
                             thinking_buffer = []
@@ -84,8 +80,9 @@ class AnthropicProvider(BaseProvider):
             tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
             messages.append({"role": "assistant", "content": response.content})
             for block in tool_use_blocks:
-                self._call_tool(messages, block, self.message_id)
+                self._call_tool(messages, block, self.message.id)
 
         assistant_reply = "".join(full_response)
-        self.update_memory(user_message, assistant_reply, f"user_{self.user_id}")
+        self.update_memory(self.message_content, assistant_reply, f"user_{self.user_id}")
+        self._persist_message(role="assistant", content=assistant_reply)
         return assistant_reply

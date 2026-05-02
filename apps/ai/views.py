@@ -34,18 +34,11 @@ def chat(request):
     else:
         conversation = Conversation.objects.create(user=request.user)
 
-    message = Message.objects.create(conversation=conversation, role="user", content=message_text)
-
     if conversation.title == "New Chat":
         conversation.title = message_text[:50]
         conversation.save()
 
-    history = [
-        {"role": m.role, "content": m.content}
-        for m in conversation.messages.all()
-    ]
-
-    provider = OpenAIProvider(user_id=request.user.id, history=history, message_id=message.id)
+    provider = OpenAIProvider(message_text, conversation_id=conversation.id)
 
     def stream():
         yield f"data: {json.dumps({'conversation_id': conversation.id})}\n\n"
@@ -57,12 +50,6 @@ def chat(request):
             else:
                 full_response.append(chunk)
                 yield f"data: {json.dumps({'text': chunk})}\n\n"
-
-        Message.objects.create(
-            conversation=conversation,
-            role="assistant",
-            content="".join(full_response),
-        )
 
         yield "data: [DONE]\n\n"
 

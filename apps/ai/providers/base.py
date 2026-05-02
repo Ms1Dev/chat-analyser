@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Generator
 
 from apps.ai.memory import memory
-from apps.ai.models import Memory
+from apps.ai.models import Memory, Message, Conversation
 
 SYSTEM_PROMPT = """You are a helpful assistant."""
 
@@ -10,15 +10,31 @@ SYSTEM_PROMPT = """You are a helpful assistant."""
 class BaseProvider(ABC):
     client = None
 
-    def __init__(self, user_id=None, history: list[dict] = None, message_id=None):
+    def __init__(self, message_content, conversation_id):
         self.client = self._get_client()
-        self.user_id = user_id
-        self.history = history
-        self.message_id = message_id
+        self.conversation_id = conversation_id
+        self.conversation = Conversation.objects.get(id=conversation_id) if conversation_id else None
+        self.user_id = self.conversation.user_id if self.conversation else None
+        self.message = self._persist_message(role="user", content=message_content)
+        self.message_content = message_content
         self.system = SYSTEM_PROMPT
-        context = self.get_context(history[-1]["content"] if history else "", "user_" + str(user_id), message_id)
+        context = self.get_context(message_content, "user_" + str(self.user_id), self.message.id)
         if context:
             self.system += context
+
+    def _persist_message(self, role: str, content: str) -> Message:
+        if self.conversation_id is None:
+            raise ValueError("conversation_id is required to persist message")
+        message = Message.objects.create(
+            conversation_id=self.conversation_id,
+            role=role,
+            content=content,
+        )
+        return message
+
+    def _get_history(self):
+        messages = Message.objects.filter(conversation_id=self.conversation_id).order_by("created_at")
+        return [{"role": m.role, "content": m.content} for m in messages]
 
     def _get_client(self):
         raise NotImplementedError("Must implement _get_client in subclass")
