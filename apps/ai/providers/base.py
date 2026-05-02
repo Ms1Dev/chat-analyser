@@ -39,11 +39,17 @@ class BaseProvider(ABC):
     def _get_client(self):
         raise NotImplementedError("Must implement _get_client in subclass")
 
+    # TODO(mem0#4453): once mem0 fixes pgvector returning distance instead of similarity,
+    # replace SIMILARITY_THRESHOLD with a threshold= arg on memory.search() and remove
+    # the manual filter below.
+    SIMILARITY_THRESHOLD = 0.35
+
     def get_context(self, message: str, user_id: str, message_id) -> str | None:
-        #TODO: if they fix the distance vs similarity issue we can add a threshold here
-        recalled = memory.search(message, filters={"user_id": user_id}, threshold=0, top_k=5)         
+        recalled = memory.search(message, filters={"user_id": user_id}, threshold=0, top_k=5)
         memories = []
         for m in recalled.get("results", []):
+            if m.get("score", 0) < self.SIMILARITY_THRESHOLD:
+                continue
             Memory.objects.create(
                 memory_id=m["id"],
                 message_id=message_id,
