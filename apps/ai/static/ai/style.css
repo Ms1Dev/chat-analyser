@@ -212,7 +212,6 @@ body {
 }
 
 .message {
-  max-width: 78%;
   padding: 9px 13px;
   border-radius: 12px;
   font-size: 14px;
@@ -222,7 +221,6 @@ body {
 }
 
 .message.user {
-  align-self: flex-end;
   background: #6366f1;
   color: #fff;
   border-bottom-right-radius: 3px;
@@ -230,10 +228,63 @@ body {
 
 .message.assistant {
   align-self: flex-start;
+  max-width: 78%;
   background: #f3f4f6;
   color: #111827;
   border-bottom-left-radius: 3px;
 }
+
+/* ── Message wrap + meta blocks ─────────── */
+.message-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 78%;
+}
+
+.message-wrap.user { align-self: flex-end; align-items: flex-end; }
+.message-wrap.assistant { align-self: flex-start; align-items: flex-start; }
+
+.meta-block {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 12px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.meta-block summary {
+  padding: 4px 10px;
+  cursor: pointer;
+  color: #9ca3af;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta-block summary::before {
+  content: '▶';
+  font-size: 9px;
+  transition: transform 0.15s;
+}
+
+.meta-block[open] summary::before { transform: rotate(90deg); }
+
+.meta-row {
+  padding: 4px 10px;
+  color: #6b7280;
+  white-space: pre-wrap;
+  word-break: break-all;
+  border-top: 1px solid #e5e7eb;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+body.dark .meta-block { border-color: #2e3147; }
+body.dark .meta-block summary { color: #4b5268; }
+body.dark .meta-row { border-color: #2e3147; color: #4b5268; }
 
 /* ── Thinking block ────────────────────── */
 .thinking-block {

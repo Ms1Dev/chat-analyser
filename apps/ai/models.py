@@ -30,7 +30,7 @@ class Message(models.Model):
 class Memory(models.Model):
     memory_id = models.UUIDField(default=uuid.uuid4, editable=False)
     message = models.ForeignKey(Message, null=True, blank=True, on_delete=models.SET_NULL, related_name='memories')
-    hash = models.TextField()
+    data = models.JSONField(default=dict)
 
 class Thought(models.Model):
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='thoughts')

@@ -46,7 +46,7 @@ class BaseProvider(ABC):
             Memory.objects.create(
                 memory_id=m["id"],
                 message_id=message_id,
-                hash=m.get("hash", ""),
+                data=m,
             )
             memories.append(m.get("memory", ""))
         memory_context = "\n".join(memories)

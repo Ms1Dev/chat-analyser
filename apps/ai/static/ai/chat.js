@@ -30,7 +30,7 @@ async function selectConversation(id) {
   const data = await api(`/chat/conversations/${id}/messages/`);
   const msgs = document.getElementById('chat-messages');
   msgs.innerHTML = '';
-  data.messages.forEach(m => appendMessage(m.role, m.content));
+  data.messages.forEach(m => appendMessage(m.role, m.content, m));
 }
 
 function newConversation() {
@@ -41,11 +41,44 @@ function newConversation() {
 }
 
 // ── Chat ─────────────────────────────────────────────
-function appendMessage(role, text) {
+function makeCollapsible(label, items, renderItem) {
+  const el = document.createElement('details');
+  el.className = 'meta-block';
+  const summary = document.createElement('summary');
+  summary.textContent = `${label} (${items.length})`;
+  el.appendChild(summary);
+  items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'meta-row';
+    row.textContent = renderItem(item);
+    el.appendChild(row);
+  });
+  return el;
+}
+
+function appendMessage(role, text, meta = {}) {
+  const wrap = document.createElement('div');
+  wrap.className = `message-wrap ${role}`;
+
   const div = document.createElement('div');
   div.className = `message ${role}`;
   div.textContent = text;
-  document.getElementById('chat-messages').appendChild(div);
+  wrap.appendChild(div);
+  document.getElementById('chat-messages').appendChild(wrap);
+
+  if (role === 'user') {
+    const { memories = [], thoughts = [], tool_uses = [] } = meta;
+    if (memories.length)
+      wrap.appendChild(makeCollapsible('Memories', memories,
+        m => `${m.data.memory}\n${m.data.created_at}`));
+    if (thoughts.length)
+      wrap.appendChild(makeCollapsible('Thoughts', thoughts,
+        t => t.content));
+    if (tool_uses.length)
+      wrap.appendChild(makeCollapsible('Tool calls', tool_uses,
+        t => `${t.tool_name}(${JSON.stringify(t.input_data)}) → ${JSON.stringify(t.result)}`));
+  }
+
   scrollChat();
   return div;
 }
