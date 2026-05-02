@@ -7,6 +7,8 @@ from django.views.decorators.http import require_POST, require_http_methods
 
 from .models import Conversation, Message
 from .providers import stream_response
+from .providers.anthropic import AnthropicProvider
+from .providers.openai import OpenAIProvider
 
 
 @login_required
@@ -43,11 +45,13 @@ def chat(request):
         for m in conversation.messages.all()
     ]
 
+    provider = OpenAIProvider(user_id=request.user.id, history=history, message_id=message.id)
+
     def stream():
         yield f"data: {json.dumps({'conversation_id': conversation.id})}\n\n"
 
         full_response = []
-        for kind, chunk in stream_response(history, request.user.id, message.id):
+        for kind, chunk in provider.stream_response():
             if kind == "thinking":
                 yield f"data: {json.dumps({'thinking': chunk})}\n\n"
             else:

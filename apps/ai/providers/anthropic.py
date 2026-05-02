@@ -6,59 +6,49 @@ import anthropic
 from apps.ai.models import Thought, ToolUse
 from apps.ai.tools import TOOLS, execute_tool
 
-from .base import SYSTEM_PROMPT, BaseProvider
+from .base import BaseProvider
 
-MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-7")
-_client = None
+MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 
-
-def _get_client() -> anthropic.Anthropic:
-    global _client
-    if _client is None:
-        _client = anthropic.Anthropic()
-    return _client
-
-
-def _call_tool(messages: list, block, message_id) -> None:
-    result = execute_tool(block.name, block.input)
-    ToolUse.objects.create(
-        message_id=message_id,
-        tool_name=block.name,
-        input_data=block.input,
-        result=result,
-    )
-    messages.append({
-        "role": "user",
-        "content": [{
-            "type": "tool_result",
-            "tool_use_id": block.id,
-            "content": result,
-        }],
-    })
 
 
 class AnthropicProvider(BaseProvider):
-    def stream_response(self, history: list[dict], user_id: int, message_id) -> Generator[tuple, None, str]:
-        client = _get_client()
-        mem_user_id = f"user_{user_id}"
+    
+    def _get_client(self) -> anthropic.Anthropic:
+        if self.client is None:
+            self.client = anthropic.Anthropic()
+        return self.client
+    
+    def _call_tool(self,messages: list, block, message_id) -> None:
+        result = execute_tool(block.name, block.input)
+        ToolUse.objects.create(
+            message_id=message_id,
+            tool_name=block.name,
+            input_data=block.input,
+            result=result,
+        )
+        messages.append({
+            "role": "user",
+            "content": [{
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": result,
+            }],
+        })
+
+
+    def stream_response(self) -> Generator[tuple, None, str]:
         full_response = []
-
-        user_message = history[-1]["content"] if history else ""
-
-        system = SYSTEM_PROMPT
-        context = self.get_context(user_message, mem_user_id, message_id)
-        if context:
-            system += context
-
-        messages = list(history)
+        user_message = self.history[-1]["content"] if self.history else ""
+        messages = list(self.history)
 
         while True:
             kwargs = {"tools": TOOLS} if TOOLS else {}
 
-            with client.messages.stream(
+            with self.client.messages.stream(
                 model=MODEL,
                 max_tokens=8096,
-                system=system,
+                system=self.system,
                 messages=messages,
                 thinking={"type": "adaptive"},
                 **kwargs,
@@ -76,7 +66,7 @@ class AnthropicProvider(BaseProvider):
                     elif event.type == "content_block_stop":
                         if thinking_buffer:
                             Thought.objects.create(
-                                message_id=message_id,
+                                message_id=self.message_id,
                                 content="".join(thinking_buffer),
                             )
                             thinking_buffer = []
@@ -89,8 +79,8 @@ class AnthropicProvider(BaseProvider):
             tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
             messages.append({"role": "assistant", "content": response.content})
             for block in tool_use_blocks:
-                _call_tool(messages, block, message_id)
+                self._call_tool(messages, block, self.message_id)
 
         assistant_reply = "".join(full_response)
-        self.update_memory(user_message, assistant_reply, mem_user_id)
+        self.update_memory(user_message, assistant_reply, f"user_{self.user_id}")
         return assistant_reply

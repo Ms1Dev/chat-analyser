@@ -8,6 +8,21 @@ SYSTEM_PROMPT = """You are a helpful assistant."""
 
 
 class BaseProvider(ABC):
+    client = None
+
+    def __init__(self, user_id=None, history: list[dict] = None, message_id=None):
+        self.client = self._get_client()
+        self.user_id = user_id
+        self.history = history
+        self.message_id = message_id
+        self.system = SYSTEM_PROMPT
+        context = self.get_context(history[-1]["content"] if history else "", "user_" + str(user_id), message_id)
+        if context:
+            self.system += context
+
+    def _get_client(self):
+        raise NotImplementedError("Must implement _get_client in subclass")
+
     def get_context(self, message: str, user_id: str, message_id) -> str | None:
         recalled = memory.search(message, filters={"user_id": user_id})
         memories = []
@@ -32,5 +47,5 @@ class BaseProvider(ABC):
         )
 
     @abstractmethod
-    def stream_response(self, history: list[dict], user_id: int, message_id) -> Generator[tuple, None, str]:
+    def stream_response(self) -> Generator[tuple, None, str]:
         ...

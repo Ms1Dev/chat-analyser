@@ -7,19 +7,9 @@ from openai import OpenAI
 from apps.ai.models import Thought, ToolUse
 from apps.ai.tools import TOOLS, execute_tool
 
-from .base import SYSTEM_PROMPT, BaseProvider
+from .base import BaseProvider
 
 MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
-_client = None
-
-
-def _get_client() -> OpenAI:
-    global _client
-    if _client is None:
-        _client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-    return _client
-
-
 def _to_openai_tools(tools: list[dict]) -> list[dict]:
     return [
         {
@@ -33,29 +23,41 @@ def _to_openai_tools(tools: list[dict]) -> list[dict]:
 
 
 class OpenAIProvider(BaseProvider):
-    def stream_response(self, history: list[dict], user_id: int, message_id) -> Generator[tuple, None, str]:
-        client = _get_client()
-        mem_user_id = f"user_{user_id}"
+    def _get_client(self) -> OpenAI:
+        return OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+    def _call_tool(self, messages: list, block, message_id) -> None:
+        result = execute_tool(block.name, block.input)
+        ToolUse.objects.create(
+            message_id=message_id,
+            tool_name=block.name,
+            input_data=block.input,
+            result=result,
+        )
+        messages.append({
+            "role": "user",
+            "content": [{
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": result,
+            }],
+        })
+
+    def stream_response(self) -> Generator[tuple, None, str]:
         full_response = []
+        user_message = self.history[-1]["content"] if self.history else ""
+        messages = list(self.history)
 
-        user_message = history[-1]["content"] if history else ""
-
-        system = SYSTEM_PROMPT
-        context = self.get_context(user_message, mem_user_id, message_id)
-        if context:
-            system += context
-
-        input_messages = list(history)
         openai_tools = _to_openai_tools(TOOLS) if TOOLS else []
         kwargs = {"tools": openai_tools} if openai_tools else {}
 
         while True:
             thinking_buffer = []
 
-            with client.responses.stream(
+            with self.client.responses.stream(
                 model=MODEL,
-                instructions=system,
-                input=input_messages,
+                instructions=self.system,
+                input=messages,
                 **kwargs,
             ) as stream:
                 for event in stream:
@@ -65,7 +67,7 @@ class OpenAIProvider(BaseProvider):
                     elif event.type == "response.reasoning_summary_text.done":
                         if thinking_buffer:
                             Thought.objects.create(
-                                message_id=message_id,
+                                message_id=self.message_id,
                                 content="".join(thinking_buffer),
                             )
                             thinking_buffer = []
@@ -80,26 +82,14 @@ class OpenAIProvider(BaseProvider):
             if not tool_call_items:
                 break
 
-            # Append the assistant turn (all output items) then tool results.
-            input_messages += [item.model_dump() for item in response.output]
+            messages += [item.model_dump() for item in response.output]
             for item in tool_call_items:
                 try:
                     arguments = json.loads(item.arguments)
                 except json.JSONDecodeError:
                     arguments = {}
-                result = execute_tool(item.name, arguments)
-                ToolUse.objects.create(
-                    message_id=message_id,
-                    tool_name=item.name,
-                    input_data=arguments,
-                    result=result,
-                )
-                input_messages.append({
-                    "type": "function_call_output",
-                    "call_id": item.call_id,
-                    "output": result,
-                })
+                self._call_tool(messages, type("Block", (), {"name": item.name, "input": arguments}), self.message_id)
 
         assistant_reply = "".join(full_response)
-        self.update_memory(user_message, assistant_reply, mem_user_id)
+        self.update_memory(user_message, assistant_reply, f"user_{self.user_id}")
         return assistant_reply
