@@ -70,7 +70,7 @@ function appendMessage(role, text, meta = {}) {
     const { memories = [], thoughts = [], tool_uses = [] } = meta;
     if (memories.length)
       wrap.appendChild(makeCollapsible('Memories', memories,
-        m => `${m.data.memory}\n${m.data.created_at}`));
+        m => `${m.data.memory}\n${m.data.score}\n${m.data.created_at}`));
     if (thoughts.length)
       wrap.appendChild(makeCollapsible('Thoughts', thoughts,
         t => t.content));

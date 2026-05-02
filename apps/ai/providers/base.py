@@ -40,7 +40,8 @@ class BaseProvider(ABC):
         raise NotImplementedError("Must implement _get_client in subclass")
 
     def get_context(self, message: str, user_id: str, message_id) -> str | None:
-        recalled = memory.search(message, filters={"user_id": user_id})
+        #TODO: if they fix the distance vs similarity issue we can add a threshold here
+        recalled = memory.search(message, filters={"user_id": user_id}, threshold=0, top_k=5)         
         memories = []
         for m in recalled.get("results", []):
             Memory.objects.create(
