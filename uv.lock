@@ -212,6 +212,7 @@ dependencies = [
     { name = "mem0ai", extra = ["nlp"] },
     { name = "openai" },
     { name = "psycopg2-binary" },
+    { name = "qdrant-client" },
     { name = "tiktoken" },
     { name = "whitenoise" },
 ]
@@ -227,6 +228,7 @@ requires-dist = [
     { name = "mem0ai", extras = ["nlp"], specifier = ">=2.0.1" },
     { name = "openai", specifier = ">=1.0" },
     { name = "psycopg2-binary", specifier = ">=2.9" },
+    { name = "qdrant-client", specifier = ">=1.12.0" },
     { name = "tiktoken", specifier = ">=0.7" },
     { name = "whitenoise", specifier = ">=6.0" },
 ]

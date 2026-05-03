@@ -422,3 +422,243 @@ class BaseProviderTest(TestCase):
             ]}
             provider = AnthropicProvider("hello", conversation_id=convo.id)
         self.assertIn("user likes Python", provider.system)
+
+
+# ---------------------------------------------------------------------------
+# Qdrant filter integration tests (no mock — hits real Qdrant in-memory)
+# ---------------------------------------------------------------------------
+
+class QdrantFilterTest(TestCase):
+    """
+    Verifies that mem0's Qdrant vector store correctly applies ne and lt
+    filters. Uses QdrantClient(':memory:') and pre-computed fake vectors
+    so no embedding model or external services are needed.
+    """
+
+    def setUp(self):
+        from qdrant_client import QdrantClient
+        from mem0.vector_stores.qdrant import Qdrant as QdrantVectorStore
+        client = QdrantClient(":memory:")
+        self.store = QdrantVectorStore(
+            collection_name="test_filters",
+            embedding_model_dims=384,
+            client=client,
+        )
+        vec = [0.1] * 384
+        self.store.insert(
+            vectors=[vec, vec, vec],
+            payloads=[
+                {"conversation_id": "conv_a", "created_at": "2024-01-05T00:00:00"},
+                {"conversation_id": "conv_a", "created_at": "2024-01-15T00:00:00"},
+                {"conversation_id": "conv_b", "created_at": "2024-01-10T00:00:00"},
+            ],
+            ids=[1, 2, 3],
+        )
+
+    def _ids(self, results):
+        return [r.id for r in results]
+
+    def test_ne_filter_excludes_conversation(self):
+        results = self.store.search(
+            query="test", vectors=[0.1] * 384, top_k=10,
+            filters={"conversation_id": {"ne": "conv_a"}},
+        )
+        ids = self._ids(results)
+        self.assertNotIn(1, ids)   # conv_a
+        self.assertNotIn(2, ids)   # conv_a
+        self.assertIn(3, ids)      # conv_b
+
+    def test_eq_filter_includes_only_matching_conversation(self):
+        results = self.store.search(
+            query="test", vectors=[0.1] * 384, top_k=10,
+            filters={"conversation_id": "conv_a"},
+        )
+        ids = self._ids(results)
+        self.assertIn(1, ids)      # conv_a
+        self.assertIn(2, ids)      # conv_a
+        self.assertNotIn(3, ids)   # conv_b
+
+    def test_lt_filter_excludes_memories_at_or_after_cutoff(self):
+        results = self.store.search(
+            query="test", vectors=[0.1] * 384, top_k=10,
+            filters={"created_at": {"lt": "2024-01-10T00:00:00"}},
+        )
+        ids = self._ids(results)
+        self.assertIn(1, ids)      # Jan 5 — before cutoff
+        self.assertNotIn(2, ids)   # Jan 15 — after cutoff
+        self.assertNotIn(3, ids)   # Jan 10 — equal, lt is strict
+
+    def test_combined_ne_and_lt_filter(self):
+        results = self.store.search(
+            query="test", vectors=[0.1] * 384, top_k=10,
+            filters={"conversation_id": "conv_a", "created_at": {"lt": "2024-01-10T00:00:00"}},
+        )
+        ids = self._ids(results)
+        self.assertIn(1, ids)      # conv_a + Jan 5 ✓
+        self.assertNotIn(2, ids)   # conv_a + Jan 15 — too late ✗
+        self.assertNotIn(3, ids)   # conv_b ✗
+
+
+# ---------------------------------------------------------------------------
+# _fetch_memories tests
+# ---------------------------------------------------------------------------
+
+class FetchMemoriesTest(TestCase):
+    def _make_provider(self):
+        with patch("apps.ai.providers.anthropic.anthropic.Anthropic"), \
+             patch("apps.ai.providers.base.memory") as mock_mem:
+            mock_mem.search.return_value = {"results": []}
+            _, convo = make_user_and_conversation()
+            provider = AnthropicProvider("hello", conversation_id=convo.id)
+        return provider
+
+    def _mem(self, text, score=1.0, mem_id=None, metadata=None):
+        import uuid
+        m = {"id": mem_id or str(uuid.uuid4()), "memory": text, "score": score}
+        if metadata:
+            m["metadata"] = metadata
+        return m
+
+    def test_returns_memory_text_above_threshold(self):
+        provider = self._make_provider()
+        with patch("apps.ai.providers.base.memory") as mock_mem:
+            mock_mem.search.return_value = {"results": [self._mem("user likes cats")]}
+            result = provider._fetch_memories(
+                message="test", user_id=provider.user_id,
+                message_id=provider.message.id, budget=10_000,
+            )
+        self.assertIsNotNone(result)
+        self.assertIn("user likes cats", result)
+
+    def test_excludes_results_below_similarity_threshold(self):
+        provider = self._make_provider()
+        with patch("apps.ai.providers.base.memory") as mock_mem:
+            mock_mem.search.return_value = {"results": [self._mem("low score memory", score=0.1)]}
+            result = provider._fetch_memories(
+                message="test", user_id=provider.user_id,
+                message_id=provider.message.id, budget=10_000,
+            )
+        self.assertIsNone(result)
+
+    def test_returns_none_when_empty_results(self):
+        provider = self._make_provider()
+        with patch("apps.ai.providers.base.memory") as mock_mem:
+            mock_mem.search.return_value = {"results": []}
+            result = provider._fetch_memories(
+                message="test", user_id=provider.user_id,
+                message_id=provider.message.id, budget=10_000,
+            )
+        self.assertIsNone(result)
+
+    def test_creates_memory_db_records_for_matched_results(self):
+        from apps.ai.models import Memory as MemoryModel
+        provider = self._make_provider()
+        with patch("apps.ai.providers.base.memory") as mock_mem:
+            mock_mem.search.return_value = {"results": [
+                self._mem("first memory"), self._mem("second memory"),
+            ]}
+            provider._fetch_memories(
+                message="test", user_id=provider.user_id,
+                message_id=provider.message.id, budget=10_000,
+            )
+        self.assertEqual(MemoryModel.objects.filter(message=provider.message).count(), 2)
+
+    def test_exclude_conversation_passes_ne_filter(self):
+        provider = self._make_provider()
+        with patch("apps.ai.providers.base.memory") as mock_mem:
+            mock_mem.search.return_value = {"results": []}
+            provider._fetch_memories(
+                message="test", user_id=provider.user_id,
+                message_id=provider.message.id, budget=10_000,
+                exclude_conversation=True,
+            )
+        filters = mock_mem.search.call_args.kwargs["filters"]
+        self.assertEqual(filters.get("conversation_id"), {"ne": str(provider.conversation_id)})
+
+    def test_include_conversation_passes_equality_filter(self):
+        provider = self._make_provider()
+        with patch("apps.ai.providers.base.memory") as mock_mem:
+            mock_mem.search.return_value = {"results": []}
+            provider._fetch_memories(
+                message="test", user_id=provider.user_id,
+                message_id=provider.message.id, budget=10_000,
+                exclude_conversation=False,
+            )
+        filters = mock_mem.search.call_args.kwargs["filters"]
+        self.assertEqual(filters.get("conversation_id"), str(provider.conversation_id))
+
+    def test_budget_limits_number_of_memories_returned(self):
+        provider = self._make_provider()
+        # "hello" and "world" are each 1 token; budget of 1 fits exactly one
+        with patch("apps.ai.providers.base.memory") as mock_mem:
+            mock_mem.search.return_value = {"results": [
+                self._mem("hello"), self._mem("world"),
+            ]}
+            result = provider._fetch_memories(
+                message="test", user_id=provider.user_id,
+                message_id=provider.message.id, budget=1,
+            )
+        self.assertEqual(len(result), 1)
+
+
+# ---------------------------------------------------------------------------
+# _get_summarised_history tests
+# ---------------------------------------------------------------------------
+
+class GetSummarisedHistoryTest(TestCase):
+    def _make_provider(self):
+        with patch("apps.ai.providers.anthropic.anthropic.Anthropic"), \
+             patch("apps.ai.providers.base.memory") as mock_mem:
+            mock_mem.search.return_value = {"results": []}
+            _, convo = make_user_and_conversation()
+            provider = AnthropicProvider("hello", conversation_id=convo.id)
+        return provider
+
+    def _mem(self, text, created_at, mem_id=None):
+        import uuid
+        return {"id": mem_id or str(uuid.uuid4()), "memory": text, "created_at": created_at}
+
+    def test_excludes_memories_after_cutoff(self):
+        from datetime import datetime, timezone
+        provider = self._make_provider()
+        cutoff = datetime(2024, 1, 10, 12, 0, tzinfo=timezone.utc)
+        with patch("apps.ai.providers.base.memory") as mock_mem:
+            mock_mem.get_all.return_value = [
+                self._mem("before cutoff", "2024-01-09T10:00:00+00:00"),
+                self._mem("after cutoff",  "2024-01-11T10:00:00+00:00"),
+            ]
+            history, _ = provider._get_summarised_history(provider.conversation_id, cutoff)
+        self.assertIn("before cutoff", history)
+        self.assertNotIn("after cutoff", history)
+
+    def test_returns_memories_in_chronological_order(self):
+        from datetime import datetime, timezone
+        provider = self._make_provider()
+        cutoff = datetime(2024, 1, 20, tzinfo=timezone.utc)
+        with patch("apps.ai.providers.base.memory") as mock_mem:
+            mock_mem.get_all.return_value = [
+                self._mem("second", "2024-01-10T00:00:00+00:00"),
+                self._mem("first",  "2024-01-05T00:00:00+00:00"),
+            ]
+            history, _ = provider._get_summarised_history(provider.conversation_id, cutoff)
+        self.assertEqual(history, ["first", "second"])
+
+    def test_filters_by_conversation_id(self):
+        from datetime import datetime, timezone
+        provider = self._make_provider()
+        cutoff = datetime(2024, 1, 20, tzinfo=timezone.utc)
+        with patch("apps.ai.providers.base.memory") as mock_mem:
+            mock_mem.get_all.return_value = []
+            provider._get_summarised_history(provider.conversation_id, cutoff)
+        filters = mock_mem.get_all.call_args.kwargs["filters"]
+        self.assertEqual(filters.get("conversation_id"), str(provider.conversation_id))
+
+    def test_returns_empty_list_when_no_memories(self):
+        from datetime import datetime, timezone
+        provider = self._make_provider()
+        cutoff = datetime(2024, 1, 20, tzinfo=timezone.utc)
+        with patch("apps.ai.providers.base.memory") as mock_mem:
+            mock_mem.get_all.return_value = []
+            history, last_when = provider._get_summarised_history(provider.conversation_id, cutoff)
+        self.assertEqual(history, [])
+        self.assertIsNone(last_when)

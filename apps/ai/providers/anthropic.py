@@ -41,8 +41,6 @@ class AnthropicProvider(BaseProvider):
     def stream_response(self) -> Generator[tuple, None, str]:
         full_response = []
 
-        print(self.system)
-
         while True:
             kwargs = {"tools": self._get_tools(TOOLS)} if TOOLS else {}
 

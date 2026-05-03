@@ -29,7 +29,7 @@ class BaseProvider(ABC):
         effective = cb.available_tokens(self.MODEL, system_tokens)
         self.history_budget = int(effective * cb.CHAT_HISTORY_FRACTION)
         self.summarised_history_budget = int(effective * cb.SUMMARISED_HISTORY_FRACTION)
-        relevant_history_budget = int(self.history_budget * cb.RELEVANT_CHAT_HISTORY_FRACTION)
+        relevant_history_budget = int(effective * cb.RELEVANT_CHAT_HISTORY_FRACTION)
         
         # relevant memories from other conversations
         memory_budget = int(effective * cb.MEMORY_FRACTION)
@@ -86,9 +86,9 @@ class BaseProvider(ABC):
     ) -> str | None:
         
         if exclude_conversation:
-            filters = {"run_id": {"ne": str(self.conversation_id)}, **(filters or {})}
+            filters = {"conversation_id": {"ne": str(self.conversation_id)}, **(filters or {})}
         else:
-            filters = {"run_id": str(self.conversation_id), **(filters or {})}
+            filters = {"conversation_id": str(self.conversation_id), **(filters or {})}
 
         results = memory.search(
             message, filters={"user_id": self.user_id, **(filters or {})}, threshold=0, top_k=top_k
@@ -119,7 +119,7 @@ class BaseProvider(ABC):
     
     def _get_summarised_history(self, conversation_id, last_message_when) -> tuple:
         cutoff = last_message_when.isoformat() if hasattr(last_message_when, "isoformat") else last_message_when
-        results = memory.get_all(filters={"run_id": str(conversation_id)}, top_k=100)
+        results = memory.get_all(filters={"conversation_id": str(conversation_id)}, top_k=100)
         results = [r for r in results if r.get("created_at", "") < cutoff]
         results.sort(key=lambda r: r.get("created_at", ""), reverse=True)
         fitted, last_memory_when = cb.fit_memories(results, self.summarised_history_budget)
@@ -145,8 +145,7 @@ class BaseProvider(ABC):
                 {"role": "assistant", "content": assistant_reply},
             ],
             user_id=user_id,
-            run_id=str(self.conversation_id),
-            created_at=self.message.created_at.isoformat(),
+            metadata={"conversation_id": str(self.conversation_id), "created_at": self.message.created_at.isoformat()},
         )
 
     @abstractmethod

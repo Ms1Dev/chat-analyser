@@ -11,6 +11,7 @@ dependencies = [
     "django-allauth>=65.0",
     "django-browser-reload>=1.0",
     "mem0ai[nlp]>=2.0.1",
+    "qdrant-client>=1.12.0",
     "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
     "anthropic>=0.97.0",
     "tiktoken>=0.7",

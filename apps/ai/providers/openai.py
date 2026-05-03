@@ -39,8 +39,6 @@ class OpenAIProvider(BaseProvider):
     def stream_response(self) -> Generator[tuple, None, str]:
         full_response = []
 
-        print(self.system)
-
         openai_tools = self._get_tools(TOOLS) if TOOLS else []
         kwargs = {"tools": openai_tools} if openai_tools else {}
 
