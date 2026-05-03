@@ -82,5 +82,5 @@ class AnthropicProvider(BaseProvider):
 
         assistant_reply = "".join(full_response)
         self.update_memory(self.message_content, assistant_reply, self.user_id)
-        self._persist_message(role="assistant", content=assistant_reply, model=self.MODEL)
+        self._persist_message(role="assistant", content=assistant_reply, model=self.MODEL, responding_to=self.message)
         return assistant_reply

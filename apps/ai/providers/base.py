@@ -115,7 +115,7 @@ class BaseProvider(ABC):
         return [f.get("memory", "") for f in fitted] if fitted else None
 
 
-    def _persist_message(self, role: str, content: str, model: str = "") -> Message:
+    def _persist_message(self, role: str, content: str, model: str = "", responding_to: Message | None = None) -> Message:
         if self.conversation_id is None:
             raise ValueError("conversation_id is required to persist message")
         return Message.objects.create(
@@ -123,6 +123,7 @@ class BaseProvider(ABC):
             role=role,
             content=content,
             model=model,
+            responding_to=responding_to
         )
     
     def _get_summarised_history(self, conversation_id, last_message_when) -> tuple:
