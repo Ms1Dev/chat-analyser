@@ -28,8 +28,16 @@ class Message(models.Model):
 
 
 class Memory(models.Model):
+    FETCHED_WHY_CHOICES = [
+        ("chat_summary", "Chat Summary"),
+        ("chat_relevant_history", "Chat Relevant History"),
+        ("relevant_memory", "Relevant Memory"),
+        ("other", "Other"),
+    ]
     memory_id = models.UUIDField(default=uuid.uuid4, editable=False)
     message = models.ForeignKey(Message, null=True, blank=True, on_delete=models.SET_NULL, related_name='memories')
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, null=True, blank=True, related_name='memories')
+    fetched_why = models.CharField(max_length=100, choices=FETCHED_WHY_CHOICES, null=True, blank=True, default="")
     data = models.JSONField(default=dict)
 
 class Thought(models.Model):

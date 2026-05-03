@@ -36,7 +36,6 @@ class BaseProvider(ABC):
 
         memories = self._fetch_memories(
             message=message_content,
-            user_id=self.user_id,
             message_id=self.message.id,
             budget=memory_budget,
             exclude_conversation=True,
@@ -57,7 +56,6 @@ class BaseProvider(ABC):
             if last_memory_when:
                 mems = self._fetch_memories(
                     message=message_content,
-                    user_id=self.user_id,
                     message_id=self.message.id,
                     budget=relevant_history_budget,
                     exclude_conversation=False,
@@ -75,7 +73,6 @@ class BaseProvider(ABC):
     def _fetch_memories(
         self,
         message: str,
-        user_id: str,
         message_id,
         budget: int,
         *,
@@ -85,9 +82,13 @@ class BaseProvider(ABC):
 
     ) -> str | None:
         
+        fetch_why = None
+
         if exclude_conversation:
+            fetch_why = "relevant_memory"
             filters = {"conversation_id": {"ne": str(self.conversation_id)}, **(filters or {})}
         else:
+            fetch_why = "chat_relevant_history"
             filters = {"conversation_id": str(self.conversation_id), **(filters or {})}
 
         results = memory.search(
@@ -103,9 +104,16 @@ class BaseProvider(ABC):
         fitted, _ = cb.fit_memories(texts, budget)
 
         for f in fitted:
-            Memory.objects.create(memory_id=f["id"], message_id=message_id, data=f)
+            Memory.objects.create(
+                memory_id=f["id"], 
+                message_id=message_id, 
+                conversation_id=self.conversation_id,
+                fetched_why=fetch_why,
+                data=f
+            )
 
         return [f.get("memory", "") for f in fitted] if fitted else None
+
 
     def _persist_message(self, role: str, content: str, model: str = "") -> Message:
         if self.conversation_id is None:
@@ -124,7 +132,13 @@ class BaseProvider(ABC):
         results.sort(key=lambda r: r.get("created_at", ""), reverse=True)
         fitted, last_memory_when = cb.fit_memories(results, self.summarised_history_budget)
         for f in fitted:
-            Memory.objects.create(memory_id=f["id"], message_id=self.message.id, data=f)
+            Memory.objects.create(
+                memory_id=f["id"], 
+                message_id=self.message.id, 
+                data=f,
+                conversation_id=self.conversation_id,
+                fetched_why="chat_summary",
+            )
         return [f.get("memory", "") for f in reversed(fitted)], last_memory_when
 
 
