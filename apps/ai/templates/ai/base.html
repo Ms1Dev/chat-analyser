@@ -14,7 +14,8 @@
     <link rel="stylesheet" href="{% static 'ai/style.css' %}" />
     {% block extra_head %}{% endblock %}
   </head>
-  <body>
+  <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+
     {% csrf_token %}
 
     <div class="topbar">

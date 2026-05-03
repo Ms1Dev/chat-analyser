@@ -1,8 +1,8 @@
 <form
   id="chat-input"
-  class="border-t border-base-300 px-4 py-4"
-  {% comment %} hx-post="{% url 'chat' conversation_id %}" {% endcomment %}
-  hx-swap="none"
+  hx-post="{% url 'user-message' %}"
+  hx-target="#chat-input"
+  hx-swap="outerHTML"
 >
   <div class="flex gap-2">
     <input type="text" name="message" autocomplete="off" class="input input-bordered flex-1" />

@@ -12,6 +12,7 @@ async function loadConversations() {
 
 function renderConversations() {
   const list = document.getElementById('convos-list');
+  if (!list) return;
   list.innerHTML = '';
   conversations.forEach(c => {
     const item = document.createElement('div');
@@ -165,10 +166,6 @@ function scrollChat() {
 // }
 
 // ── Init ─────────────────────────────────────────────
-document.getElementById('chat-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-});
-// document.getElementById('send-btn').addEventListener('click', sendMessage);
 document.getElementById('new-convo-btn').addEventListener('click', newConversation);
 
 loadConversations();

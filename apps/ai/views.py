@@ -1,8 +1,9 @@
 import json
 
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, StreamingHttpResponse
+from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import render
+from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST, require_http_methods
 
 from .models import Conversation
@@ -19,17 +20,13 @@ def index(request):
 
 @login_required
 @require_POST
-def user_message(request, conversation_id):
+def user_message(request):
     message_content = request.POST.get("message")
-    conversation = get_object_or_404(Conversation, id=conversation_id, user=request.user)
-    input_form = render_to_string(
-        "ai/chat/input.html", {"conversation_id": conversation_id}, request=request
-    )
-    user_message = render_to_string(
+    input_form = render_to_string("ai/chat/input.html", {}, request=request)
+    user_msg = render_to_string(
         "ai/chat/partials/oob-sent.html", {"message_content": message_content}, request=request
     )
-    assistant_call.delay(request.user.id, message_content, str(conversation.id))
-    return HttpResponse(input_form + user_message)
+    return HttpResponse(input_form + user_msg)
 
 
 
