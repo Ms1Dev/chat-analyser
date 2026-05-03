@@ -2,7 +2,7 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST, require_http_methods
 
@@ -20,13 +20,20 @@ def index(request):
 
 @login_required
 @require_POST
-def user_message(request):
+def user_message(request, conversation_id):
     message_content = request.POST.get("message")
-    input_form = render_to_string("ai/chat/input.html", {}, request=request)
-    user_msg = render_to_string(
+    get_object_or_404(Conversation, id=conversation_id, user=request.user)
+    input_html = render_to_string(
+        "ai/chat/input.html", {"conversation_id": conversation_id}, request=request
+    )
+    oob_user_msg = render_to_string(
         "ai/chat/partials/oob-sent.html", {"message_content": message_content}, request=request
     )
-    return HttpResponse(input_form + user_msg)
+    response = HttpResponse(input_html + oob_user_msg)
+    response["HX-Trigger"] = json.dumps(
+        {"start-stream": {"conversation_id": conversation_id, "message": message_content}}
+    )
+    return response
 
 
 
@@ -102,4 +109,10 @@ def conversation_messages(request, convo_id):
             'tool_uses': list(msg.tool_uses.values('id', 'tool_name', 'input_data', 'result', 'created_at')),
             'memories': list(msg.memories.values('id', 'memory_id', 'data')),
         })
-    return render(request, 'ai/index.html#messages', {'messages': messages, 'title': convo.title})
+    messages_html = render_to_string(
+        'ai/index.html#messages', {'messages': messages, 'title': convo.title}, request=request
+    )
+    oob_input = render_to_string(
+        'ai/chat/input.html', {'conversation_id': convo_id, 'oob': True}, request=request
+    )
+    return HttpResponse(messages_html + oob_input)

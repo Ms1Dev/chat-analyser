@@ -89,81 +89,44 @@ function scrollChat() {
   msgs.scrollTop = msgs.scrollHeight;
 }
 
-// async function sendMessage() {
-//   const input = document.getElementById('chat-input');
-//   const btn = document.getElementById('send-btn');
-//   const message = input.value.trim();
-//   if (!message || btn.disabled) return;
+// ── Streaming response ────────────────────────────────
+document.body.addEventListener('start-stream', async (evt) => {
+  const { conversation_id, message } = evt.detail;
 
-//   input.value = '';
-//   btn.disabled = true;
+  const bubble = appendMessage('assistant', '');
 
-//   appendMessage('user', message);
+  try {
+    const response = await fetch(`/chat/${conversation_id}/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ message }),
+    });
 
-//   const thinkingEl = document.createElement('details');
-//   thinkingEl.className = 'thinking-block';
-//   thinkingEl.open = true;
-//   thinkingEl.innerHTML = '<summary>Thinking…</summary><div class="thinking-content"></div>';
-//   document.getElementById('chat-messages').appendChild(thinkingEl);
-//   const thinkingContent = thinkingEl.querySelector('.thinking-content');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
 
-//   const assistantDiv = appendMessage('assistant', '');
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
 
-//   try {
-//     const body = { message };
-//     if (currentConversationId) body.conversation_id = currentConversationId;
-
-//     const response = await fetch('/chat/', {
-//       method: 'POST',
-//       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-//       body: JSON.stringify(body),
-//     });
-
-//     const reader = response.body.getReader();
-//     const decoder = new TextDecoder();
-//     let buffer = '';
-//     let textStarted = false;
-
-//     while (true) {
-//       const { done, value } = await reader.read();
-//       if (done) break;
-//       buffer += decoder.decode(value, { stream: true });
-//       const lines = buffer.split('\n');
-//       buffer = lines.pop();
-
-//       for (const line of lines) {
-//         if (!line.startsWith('data: ')) continue;
-//         const payload = line.slice(6);
-//         if (payload === '[DONE]') break;
-//         try {
-//           const data = JSON.parse(payload);
-//           if (data.conversation_id) currentConversationId = data.conversation_id;
-//           if (data.thinking) {
-//             thinkingContent.textContent += data.thinking;
-//             scrollChat();
-//           }
-//           if (data.text) {
-//             if (!textStarted) {
-//               textStarted = true;
-//               thinkingEl.open = false;
-//               thinkingEl.querySelector('summary').textContent = 'Thinking';
-//             }
-//             assistantDiv.textContent += data.text;
-//             scrollChat();
-//           }
-//         } catch (e) { console.warn('SSE parse error:', e); }
-//       }
-//     }
-
-//     if (!thinkingContent.textContent) thinkingEl.remove();
-//   } catch (err) {
-//     assistantDiv.textContent = 'Error: ' + err.message;
-//   }
-
-//   btn.disabled = false;
-//   input.focus();
-//   await loadConversations();
-// }
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6);
+        if (payload === '[DONE]') return;
+        try {
+          const data = JSON.parse(payload);
+          if (data.text) { bubble.textContent += data.text; scrollChat(); }
+        } catch (e) { console.warn('SSE parse error:', e); }
+      }
+    }
+  } catch (err) {
+    bubble.textContent = 'Error: ' + err.message;
+  }
+});
 
 // ── Init ─────────────────────────────────────────────
 document.getElementById('new-convo-btn').addEventListener('click', newConversation);

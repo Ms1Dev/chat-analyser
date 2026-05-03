@@ -1,11 +1,12 @@
 <form
   id="chat-input"
-  hx-post="{% url 'user-message' %}"
+  {% if oob %}hx-swap-oob="outerHTML"{% endif %}
+  {% if conversation_id %}hx-post="{% url 'user-message' conversation_id %}"{% endif %}
   hx-target="#chat-input"
   hx-swap="outerHTML"
 >
   <div class="flex gap-2">
     <input type="text" name="message" autocomplete="off" class="input input-bordered flex-1" />
-    <button type="submit" class="btn btn-primary">Send</button>
+    <button type="submit" class="btn btn-primary" {% if not conversation_id %}disabled{% endif %}>Send</button>
   </div>
 </form>
