@@ -7,7 +7,6 @@ from openai import OpenAI
 from apps.ai.models import Thought, ToolUse
 from apps.ai.tools import TOOLS, execute_tool
 
-from apps.ai import context_budget as cb
 from .base import BaseProvider
 
 
@@ -39,7 +38,8 @@ class OpenAIProvider(BaseProvider):
 
     def stream_response(self) -> Generator[tuple, None, str]:
         full_response = []
-        messages = cb.trim_history(self._get_history(), self.history_budget)
+
+        print(self.system)
 
         openai_tools = self._get_tools(TOOLS) if TOOLS else []
         kwargs = {"tools": openai_tools} if openai_tools else {}
@@ -50,7 +50,7 @@ class OpenAIProvider(BaseProvider):
             with self.client.responses.stream(
                 model=self.MODEL,
                 instructions=self.system,
-                input=messages,
+                input=self.messages,
                 **kwargs,
             ) as stream:
                 for event in stream:
@@ -77,7 +77,7 @@ class OpenAIProvider(BaseProvider):
 
             for item in response.output:
                 if item.type == "function_call":
-                    messages.append({
+                    self.messages.append({
                         "type": "function_call",
                         "id": item.id,
                         "call_id": item.call_id,
@@ -85,11 +85,11 @@ class OpenAIProvider(BaseProvider):
                         "arguments": item.arguments,
                     })
                 else:
-                    messages.append({"type": item.type, "id": item.id, "text": getattr(item, "text", "")})
+                    self.messages.append({"type": item.type, "id": item.id, "text": getattr(item, "text", "")})
             for item in tool_call_items:
-                self._call_tool(messages, item)
+                self._call_tool(self.messages, item)
 
         assistant_reply = "".join(full_response)
-        self.update_memory(self.message_content, assistant_reply, f"user_{self.user_id}")
+        self.update_memory(self.message_content, assistant_reply, self.user_id)
         self._persist_message(role="assistant", content=assistant_reply, model=self.MODEL)
         return assistant_reply

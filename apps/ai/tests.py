@@ -395,7 +395,7 @@ class BaseProviderTest(TestCase):
         Message.objects.create(
             conversation_id=provider.conversation_id, role="assistant", content="hi back"
         )
-        history = provider._get_history()
+        history, _ = provider._get_history()
         self.assertEqual(history[0]["role"], "user")
         self.assertEqual(history[1]["role"], "assistant")
 

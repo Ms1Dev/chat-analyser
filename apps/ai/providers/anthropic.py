@@ -6,7 +6,6 @@ import anthropic
 from apps.ai.models import Thought, ToolUse
 from apps.ai.tools import TOOLS, execute_tool
 
-from apps.ai import context_budget as cb
 from .base import BaseProvider
 
 
@@ -41,7 +40,8 @@ class AnthropicProvider(BaseProvider):
 
     def stream_response(self) -> Generator[tuple, None, str]:
         full_response = []
-        messages = cb.trim_history(self._get_history(), self.history_budget)
+
+        print(self.system)
 
         while True:
             kwargs = {"tools": self._get_tools(TOOLS)} if TOOLS else {}
@@ -50,7 +50,7 @@ class AnthropicProvider(BaseProvider):
                 model=self.MODEL,
                 max_tokens=8096,
                 system=self.system,
-                messages=messages,
+                messages=self.messages,
                 thinking={"type": "adaptive"},
                 **kwargs,
             ) as stream:
@@ -78,11 +78,11 @@ class AnthropicProvider(BaseProvider):
                 break
 
             tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
-            messages.append({"role": "assistant", "content": response.content})
+            self.messages.append({"role": "assistant", "content": response.content})
             for block in tool_use_blocks:
-                self._call_tool(messages, block, self.message.id)
+                self._call_tool(self.messages, block, self.message.id)
 
         assistant_reply = "".join(full_response)
-        self.update_memory(self.message_content, assistant_reply, f"user_{self.user_id}")
+        self.update_memory(self.message_content, assistant_reply, self.user_id)
         self._persist_message(role="assistant", content=assistant_reply, model=self.MODEL)
         return assistant_reply

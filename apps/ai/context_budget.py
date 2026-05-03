@@ -1,3 +1,5 @@
+from typing import Any
+
 import tiktoken
 
 CONTEXT_WINDOWS = {
@@ -10,9 +12,12 @@ SAFETY_FACTOR = 0.85
 MIN_HISTORY_MESSAGES = 10
 
 # Context split — tune these to taste
-CHAT_HISTORY_FRACTION = 0.70  # proportion of effective window reserved for chat history
-MEMORY_TOP_K = 20             # max memories fetched per search
-MEMORY_BUDGET_CAP = 4_000     # hard token ceiling on injected memories
+CHAT_HISTORY_FRACTION = 0.40  # proportion of effective window reserved for chat history
+SUMMARISED_HISTORY_FRACTION = 0.20  # proportion of effective window reserved for summarised history (if chat window exceeded)
+RELEVANT_CHAT_HISTORY_FRACTION = 0.10  # proportion of chat history budget reserved for relevant messages when summarised history is used
+MEMORY_FRACTION = 0.20        # proportion of effective window reserved for memories
+RAG_FRACTION = 0.10           # proportion of memory budget reserved for retrieved documents in RAG scenarios
+
 
 _enc = tiktoken.get_encoding("cl100k_base")
 
@@ -31,24 +36,28 @@ def available_tokens(model: str, system_tokens: int) -> int:
     return total - OUTPUT_RESERVE - system_tokens
 
 
-def trim_history(messages: list[dict], max_tokens: int) -> list[dict]:
+def trim_history(messages: list[dict], max_tokens: int) -> tuple[list[dict], str | None]:
     messages = list(messages)
     if count_messages_tokens(messages) <= max_tokens:
-        return messages
+        return messages, None
+    last_message_when = None
     while len(messages) > MIN_HISTORY_MESSAGES:
         if count_messages_tokens(messages) <= max_tokens:
             break
         messages = messages[1:]
-    return messages
+        last_message_when = messages[0].get("created_at")
+    return messages, last_message_when
 
 
-def fit_memories(memories: list[str], max_tokens: int) -> list[str]:
-    """Return as many memories as fit within max_tokens (highest-scored first)."""
+def fit_memories(memories: dict[str, Any | list], max_tokens: int) -> list[str]:
+    """Return as many memories as fit within max_tokens."""
     result, used = [], 0
+    last_memory_when = None
     for m in memories:
-        t = count_tokens(m)
+        t = count_tokens(m.get("memory", ""))
         if used + t > max_tokens:
+            last_memory_when = m.get("created_at")
             break
         result.append(m)
         used += t
-    return result
+    return result, last_memory_when

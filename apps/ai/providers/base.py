@@ -20,7 +20,7 @@ class BaseProvider(ABC):
         self.client = self._get_client()
         self.conversation_id = conversation_id
         self.conversation = Conversation.objects.get(id=conversation_id) if conversation_id else None
-        self.user_id = self.conversation.user_id if self.conversation else None
+        self.user_id = "user_" + str(self.conversation.user_id if self.conversation else None)
         self.message = self._persist_message(role="user", content=message_content)
         self.message_content = message_content
         self.system = SYSTEM_PROMPT
@@ -28,17 +28,49 @@ class BaseProvider(ABC):
         system_tokens = cb.count_tokens(self.system)
         effective = cb.available_tokens(self.MODEL, system_tokens)
         self.history_budget = int(effective * cb.CHAT_HISTORY_FRACTION)
-        memory_budget = min(effective - self.history_budget, cb.MEMORY_BUDGET_CAP)
+        self.summarised_history_budget = int(effective * cb.SUMMARISED_HISTORY_FRACTION)
+        relevant_history_budget = int(self.history_budget * cb.RELEVANT_CHAT_HISTORY_FRACTION)
+        
+        # relevant memories from other conversations
+        memory_budget = int(effective * cb.MEMORY_FRACTION)
 
-        context = self._fetch_memories(
-            message_content,
-            user_id="user_" + str(self.user_id),
+        memories = self._fetch_memories(
+            message=message_content,
+            user_id=self.user_id,
             message_id=self.message.id,
             budget=memory_budget,
-            exclude_conversation=str(self.conversation_id),
+            exclude_conversation=True,
         )
-        if context:
-            self.system += context
+
+        if memories:
+            mem_prompt = "Relevant information from your past interactions with the user:\n" + "\n".join(memories)
+            self.system += "\n\n" + mem_prompt
+
+        # get chat history, if it exceeded the budget it will return the last message timestamp
+        self.messages, last_message_when = self._get_history()
+
+        if last_message_when:
+            # get all memories since last message timestamp
+            summarised_history, last_memory_when = self._get_summarised_history(self.conversation_id, last_message_when)
+            
+            # if summarised history was truncated fetch relevant memomories from this conversation
+            if last_memory_when:
+                mems = self._fetch_memories(
+                    message=message_content,
+                    user_id=self.user_id,
+                    message_id=self.message.id,
+                    budget=relevant_history_budget,
+                    exclude_conversation=False,
+                    filters={"created_at": {"lt": last_memory_when}},
+                )
+                if mems:
+                    mem_prompt = "\n\nEarlier in this chat it was mentioned:\n" + "\n".join(mems)
+                    self.system += mem_prompt
+            
+            if summarised_history:
+                summarised_prompt = "\n\nWhat happened earlier in the conversation:\n" + "\n".join(summarised_history)
+                self.system += summarised_prompt
+    
 
     def _fetch_memories(
         self,
@@ -47,28 +79,33 @@ class BaseProvider(ABC):
         message_id,
         budget: int,
         *,
-        exclude_conversation: str | None = None,
-    ) -> str | None:
-        results = memory.search(
-            message, filters={"user_id": user_id}, threshold=0, top_k=cb.MEMORY_TOP_K
-        ).get("results", [])
+        exclude_conversation: bool = True,
+        filters: dict | None = None,
+        top_k: int = 20,
 
+    ) -> str | None:
+        
         if exclude_conversation:
-            results = [
-                r for r in results
-                if r.get("metadata", {}).get("conversation_id") != exclude_conversation
-            ]
+            filters = {"run_id": {"ne": str(self.conversation_id)}, **(filters or {})}
+        else:
+            filters = {"run_id": str(self.conversation_id), **(filters or {})}
+
+        results = memory.search(
+            message, filters={"user_id": self.user_id, **(filters or {})}, threshold=0, top_k=top_k
+        ).get("results", [])
 
         texts = []
         for r in results:
             if r.get("score", 0) < self.SIMILARITY_THRESHOLD:
                 continue
-            Memory.objects.create(memory_id=r["id"], message_id=message_id, data=r)
-            texts.append(r.get("memory", ""))
+            texts.append(r)
 
-        fitted = cb.fit_memories(texts, budget)
-        if fitted:
-            return "\n\nWhat you remember about this user:\n" + "\n".join(fitted)
+        fitted, _ = cb.fit_memories(texts, budget)
+
+        for f in fitted:
+            Memory.objects.create(memory_id=f["id"], message_id=message_id, data=f)
+
+        return [f.get("memory", "") for f in fitted] if fitted else None
 
     def _persist_message(self, role: str, content: str, model: str = "") -> Message:
         if self.conversation_id is None:
@@ -79,10 +116,24 @@ class BaseProvider(ABC):
             content=content,
             model=model,
         )
+    
+    def _get_summarised_history(self, conversation_id, last_message_when) -> tuple:
+        cutoff = last_message_when.isoformat() if hasattr(last_message_when, "isoformat") else last_message_when
+        results = memory.get_all(filters={"run_id": str(conversation_id)}, top_k=100)
+        results = [r for r in results if r.get("created_at", "") < cutoff]
+        results.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+        fitted, last_memory_when = cb.fit_memories(results, self.summarised_history_budget)
+        for f in fitted:
+            Memory.objects.create(memory_id=f["id"], message_id=self.message.id, data=f)
+        return [f.get("memory", "") for f in reversed(fitted)], last_memory_when
+
 
     def _get_history(self):
         messages = Message.objects.filter(conversation_id=self.conversation_id).order_by("created_at")
-        return [{"role": m.role, "content": m.content} for m in messages]
+        history = [{"role": m.role, "content": m.content, "created_at": m.created_at} for m in messages]
+        trimmed, last_message_when = cb.trim_history(history, self.history_budget)
+        message_history = [{"role": m["role"], "content": m["content"]} for m in trimmed]
+        return message_history, last_message_when
 
     def _get_client(self):
         raise NotImplementedError("Must implement _get_client in subclass")
@@ -94,7 +145,8 @@ class BaseProvider(ABC):
                 {"role": "assistant", "content": assistant_reply},
             ],
             user_id=user_id,
-            metadata={"conversation_id": str(self.conversation_id)},
+            run_id=str(self.conversation_id),
+            created_at=self.message.created_at.isoformat(),
         )
 
     @abstractmethod
