@@ -10,20 +10,24 @@
         Chats
         <button class="btn-new" id="new-convo-btn" title="New chat">+</button>
       </div>
-      <div class="convos-list" id="convos-list"></div>
+      {% include "ai/chat/conversation_list.html" %}
     </div>
 
     <!-- Main chat -->
     <div class="chat-main">
-      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-messages" id="chat-messages">
+        {% partialdef messages %}
+          {% for msg in messages %}
+            {% if msg.role == 'user' %}
+              {% include "ai/chat/partials/sent.html" with message_content=msg.content %}
+            {% else %}
+              {% include "ai/chat/partials/received.html" with message_content=msg.content message_id=msg.id %}
+            {% endif %}
+          {% endfor %}
+        {% endpartialdef %}
+      </div>
       <div class="chat-input-row">
-        <textarea
-          class="chat-input"
-          id="chat-input"
-          placeholder="Type a message…"
-          rows="2"
-        ></textarea>
-        <button class="btn btn-primary" id="send-btn">Send</button>
+        {% include "ai/chat/input.html" %}
       </div>
     </div>
   </div>

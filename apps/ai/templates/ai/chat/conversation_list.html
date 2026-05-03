@@ -1,0 +1,15 @@
+
+{% for convo in conversations %}
+    <div 
+        class="convo-item" 
+        data-convo-id="{{ convo.id }}"
+        hx-get="{% url 'conversation-messages' convo.id %}"
+        hx-target="#chat-messages"
+        hx-swap="innerHTML"
+    >
+        {{ convo.title }}
+    </div>
+    {% empty %}
+    <div class="convo-item
+        "><em>No conversations yet</em></div>
+{% endfor %}

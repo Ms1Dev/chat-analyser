@@ -12,18 +12,35 @@ from .providers.openai import OpenAIProvider
 
 @login_required
 def index(request):
-    return render(request, 'ai/index.html')
+    conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
+    return render(request, 'ai/index.html', {'conversations': conversations})
+
 
 
 @login_required
 @require_POST
-def chat(request):
+def user_message(request, conversation_id):
+    message_content = request.POST.get("message")
+    conversation = get_object_or_404(Conversation, id=conversation_id, user=request.user)
+    input_form = render_to_string(
+        "ai/chat/input.html", {"conversation_id": conversation_id}, request=request
+    )
+    user_message = render_to_string(
+        "ai/chat/partials/oob-sent.html", {"message_content": message_content}, request=request
+    )
+    assistant_call.delay(request.user.id, message_content, str(conversation.id))
+    return HttpResponse(input_form + user_message)
+
+
+
+@login_required
+@require_POST
+def chat(request, conversation_id=None):
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
         return JsonResponse({"error": "invalid JSON"}, status=400)
     message_text = data.get("message", "")
-    conversation_id = data.get("conversation_id")
 
     if conversation_id:
         try:
@@ -88,4 +105,4 @@ def conversation_messages(request, convo_id):
             'tool_uses': list(msg.tool_uses.values('id', 'tool_name', 'input_data', 'result', 'created_at')),
             'memories': list(msg.memories.values('id', 'memory_id', 'data')),
         })
-    return JsonResponse({'messages': messages, 'title': convo.title})
+    return render(request, 'ai/index.html#messages', {'messages': messages, 'title': convo.title})
