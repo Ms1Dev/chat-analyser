@@ -33,5 +33,11 @@ media/
 .DS_Store
 Thumbs.db
 
+# Node
+node_modules/
+
+# Generated CSS
+apps/ai/static/ai/tailwind.css
+
 # Claude Code
 .claude/

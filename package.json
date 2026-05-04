@@ -1,0 +1,26 @@
+{
+  "name": "chat_analyser",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tailwindcss -i src/input.css -o apps/ai/static/ai/tailwind.css --minify",
+    "watch": "tailwindcss -i src/input.css -o apps/ai/static/ai/tailwind.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ms1Dev/chat-analyser.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ms1Dev/chat-analyser/issues"
+  },
+  "homepage": "https://github.com/Ms1Dev/chat-analyser#readme",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.2.4",
+    "daisyui": "^5.5.19",
+    "tailwindcss": "^4.2.4"
+  }
+}
