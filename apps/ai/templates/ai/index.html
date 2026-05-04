@@ -75,7 +75,10 @@
       const bubble = document.querySelector(".assistant-typing .chat-bubble");
       if (bubble) { bubble.textContent += text; scrollChat(); }
     })
-    .on("chat_done", () => {})
+    .on("chat_done", ({ html }) => {
+      const typing = document.querySelector(".assistant-typing");
+      if (typing && html) typing.outerHTML = html;
+    })
     .connect();
 </script>
 {% endblock %}

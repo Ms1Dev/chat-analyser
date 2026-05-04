@@ -154,23 +154,19 @@ class BaseProvider(ABC):
 
     def _finish_response(self, assistant_reply: str) -> str:
         self.update_memory(self.message_content, assistant_reply, self.user_id)
-        assistant_message = self._persist_message(
+        self.assistant_message = self._persist_message(
             role="assistant", content=assistant_reply, model=self.MODEL, responding_to=self.message
         )
         Memory.objects.bulk_create([
-            Memory(
-                message=assistant_message,
-                conversation_id=self.conversation_id,
-                **m,
-            )
+            Memory(message=self.assistant_message, conversation_id=self.conversation_id, **m)
             for m in self._pending_memories
         ])
         Thought.objects.bulk_create([
-            Thought(message=assistant_message, content=content)
+            Thought(message=self.assistant_message, content=content)
             for content in self._pending_thoughts
         ])
         ToolUse.objects.bulk_create([
-            ToolUse(message=assistant_message, **tu)
+            ToolUse(message=self.assistant_message, **tu)
             for tu in self._pending_tool_uses
         ])
         return assistant_reply
