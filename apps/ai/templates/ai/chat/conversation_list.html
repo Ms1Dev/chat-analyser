@@ -1,14 +1,29 @@
 
-<ul class="menu rounded-box w-56">
+<ul id="conversation-list" class="menu rounded-box w-56">
 {% for convo in conversations %}
-    <li
-        data-convo-id="{{ convo.id }}"
-        hx-get="{% url 'conversation-messages' convo.id %}"
-        hx-target="#chat-messages"
-        hx-swap="innerHTML"
-    >
-        <button>
+    <li id="convo-item-{{ convo.id }}">
+        <button
+            data-convo-id="{{ convo.id }}"
+            hx-get="{% url 'conversation-messages' convo.id %}"
+            hx-target="#chat-messages"
+            hx-swap="innerHTML"
+            class="flex flex-row justify-between items-center convo-item"
+        >
             {{ convo.title }}
+            <div class="dropdown" hx-inherit="false" onclick="event.stopPropagation()">
+                <div tabindex="0" role="button" class="btn m-1">Click</div>
+                <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+                    <li>
+                        <a
+                            hx-delete="{% url 'conversation-delete' convo.id %}"
+                            hx-target="#convo-item-{{ convo.id }}"
+                            hx-swap="delete"
+                        >
+                            Delete
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </button>
     </li>
     {% empty %}

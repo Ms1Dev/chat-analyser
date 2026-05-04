@@ -5,6 +5,7 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST, require_http_methods
 
 from .inference import dispatch_chat_inference
+from .memory import memory
 from .models import Conversation
 
 
@@ -91,3 +92,21 @@ def conversation_messages(request, convo_id):
     messages_html = render_to_string('ai/index.html#messages', {**ctx, 'title': convo.title}, request=request)
     oob_input = render_to_string('ai/chat/input.html', {'conversation_id': convo_id, 'oob': True}, request=request)
     return HttpResponse(messages_html + oob_input)
+
+
+@login_required
+@require_http_methods(['DELETE'])
+def conversation_delete(request, convo_id):
+    try:
+        convo = Conversation.objects.get(id=convo_id, user=request.user)
+    except Conversation.DoesNotExist:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+    convo.delete()
+
+    results = memory.get_all(filters={"user_id": "user_" + str(request.user.id), "conversation_id": str(convo_id)}, top_k=1000)
+    memories = results.get("results", [])
+    for m in memories:
+        memory.delete(m["id"])
+
+    return JsonResponse({'success': True})
