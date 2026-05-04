@@ -56,18 +56,20 @@
   document.getElementById("dark-toggle").addEventListener("click", toggleDark);
 
 
+  function scrollChat() {
+    const msgs = document.getElementById("chat-messages");
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+  }
+
   // ── Relay ────────────────────────────────────────────
-  //
-  // Tool schemas are defined server-side in ai/frontend_tools.py.
-  // Here we register the browser-side handlers that run when
-  // the LLM calls one of those tools. The server dispatches
-  // the call via SSE; the relay receives it and calls the
-  // matching handler.
-  //
-  // ─────────────────────────────────────────────────────
   window._relay = new Relay()
     .registerHtmxTriggers()
     .on("set_dark_mode", ({ dark }) => setDark(dark))
+    .on("chat_token", ({ text }) => {
+      const bubble = document.querySelector(".assistant-typing .chat-bubble");
+      if (bubble) { bubble.textContent += text; scrollChat(); }
+    })
+    .on("chat_done", () => {})
     .connect();
 </script>
 {% endblock %}
