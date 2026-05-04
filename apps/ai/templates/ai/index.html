@@ -15,16 +15,17 @@
 
     <!-- Main chat -->
     <div class="chat-main">
-      <div class="chat-messages" id="chat-messages">
-        {% partialdef messages %}
+      <div class="chat-messages flex flex-col-reverse overflow-y-auto" id="chat-messages">
+      {% partialdef messages %}
           {% for msg in messages %}
-            {% if msg.role == 'user' %}
+          {% if msg.role == 'user' %}
               {% include "ai/chat/partials/sent.html" with message_content=msg.content %}
-            {% else %}
+          {% else %}
               {% include "ai/chat/partials/received.html" with message=msg %}
-            {% endif %}
+          {% endif %}
           {% endfor %}
-        {% endpartialdef %}
+          {% include "ai/chat/partials/load-more-sentinel.html" %}
+      {% endpartialdef %}
       </div>
       <div class="chat-input-row">
         {% include "ai/chat/input.html" %}
@@ -60,6 +61,11 @@
     const msgs = document.getElementById("chat-messages");
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
   }
+
+  document.body.addEventListener('scroll-to-bottom', () => {
+    const msgs = document.getElementById("chat-messages");
+    if (msgs) msgs.scrollTo({ top: msgs.scrollHeight, behavior: 'smooth' });
+  });
 
   // ── Relay ────────────────────────────────────────────
   window._relay = new Relay()
