@@ -3,7 +3,7 @@ from typing import Generator
 
 from apps.ai import context_budget as cb
 from apps.ai.memory import memory
-from apps.ai.models import Memory, Message, Conversation
+from apps.ai.models import Memory, Message, Thought, ToolUse, Conversation
 
 SYSTEM_PROMPT = """You are a helpful assistant."""
 
@@ -24,6 +24,9 @@ class BaseProvider(ABC):
         self.message = self._persist_message(role="user", content=message_content)
         self.message_content = message_content
         self.system = SYSTEM_PROMPT
+        self._pending_memories: list[dict] = []
+        self._pending_thoughts: list[str] = []
+        self._pending_tool_uses: list[dict] = []
 
         system_tokens = cb.count_tokens(self.system)
         effective = cb.available_tokens(self.MODEL, system_tokens)
@@ -36,7 +39,6 @@ class BaseProvider(ABC):
 
         memories = self._fetch_memories(
             message=message_content,
-            message_id=self.message.id,
             budget=memory_budget,
             exclude_conversation=True,
         )
@@ -56,7 +58,6 @@ class BaseProvider(ABC):
             if last_memory_when:
                 mems = self._fetch_memories(
                     message=message_content,
-                    message_id=self.message.id,
                     budget=relevant_history_budget,
                     exclude_conversation=False,
                     filters={"created_at": {"lt": last_memory_when}},
@@ -73,17 +74,12 @@ class BaseProvider(ABC):
     def _fetch_memories(
         self,
         message: str,
-        message_id,
         budget: int,
         *,
         exclude_conversation: bool = True,
         filters: dict | None = None,
         top_k: int = 20,
-
-    ) -> str | None:
-        
-        fetch_why = None
-
+    ) -> list[str] | None:
         if exclude_conversation:
             fetch_why = "relevant_memory"
             filters = {"conversation_id": {"ne": str(self.conversation_id)}, **(filters or {})}
@@ -95,22 +91,17 @@ class BaseProvider(ABC):
             message, filters={"user_id": self.user_id, **(filters or {})}, threshold=0, top_k=top_k
         ).get("results", [])
 
-        texts = []
-        for r in results:
-            if r.get("score", 0) < self.SIMILARITY_THRESHOLD:
-                continue
-            texts.append(r)
-
-        fitted, _ = cb.fit_memories(texts, budget)
+        fitted, _ = cb.fit_memories(
+            [r for r in results if r.get("score", 0) >= self.SIMILARITY_THRESHOLD],
+            budget,
+        )
 
         for f in fitted:
-            Memory.objects.create(
-                memory_id=f["id"], 
-                message_id=message_id, 
-                conversation_id=self.conversation_id,
-                fetched_why=fetch_why,
-                data=f
-            )
+            self._pending_memories.append({
+                "memory_id": f["id"],
+                "fetched_why": fetch_why,
+                "data": f,
+            })
 
         return [f.get("memory", "") for f in fitted] if fitted else None
 
@@ -133,13 +124,11 @@ class BaseProvider(ABC):
         results.sort(key=lambda r: r.get("created_at", ""), reverse=True)
         fitted, last_memory_when = cb.fit_memories(results, self.summarised_history_budget)
         for f in fitted:
-            Memory.objects.create(
-                memory_id=f["id"], 
-                message_id=self.message.id, 
-                data=f,
-                conversation_id=self.conversation_id,
-                fetched_why="chat_summary",
-            )
+            self._pending_memories.append({
+                "memory_id": f["id"],
+                "fetched_why": "chat_summary",
+                "data": f,
+            })
         return [f.get("memory", "") for f in reversed(fitted)], last_memory_when
 
 
@@ -162,6 +151,29 @@ class BaseProvider(ABC):
             user_id=user_id,
             metadata={"conversation_id": str(self.conversation_id), "created_at": self.message.created_at.isoformat()},
         )
+
+    def _finish_response(self, assistant_reply: str) -> str:
+        self.update_memory(self.message_content, assistant_reply, self.user_id)
+        assistant_message = self._persist_message(
+            role="assistant", content=assistant_reply, model=self.MODEL, responding_to=self.message
+        )
+        Memory.objects.bulk_create([
+            Memory(
+                message=assistant_message,
+                conversation_id=self.conversation_id,
+                **m,
+            )
+            for m in self._pending_memories
+        ])
+        Thought.objects.bulk_create([
+            Thought(message=assistant_message, content=content)
+            for content in self._pending_thoughts
+        ])
+        ToolUse.objects.bulk_create([
+            ToolUse(message=assistant_message, **tu)
+            for tu in self._pending_tool_uses
+        ])
+        return assistant_reply
 
     @abstractmethod
     def stream_response(self) -> Generator[tuple, None, str]:

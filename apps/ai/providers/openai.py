@@ -4,7 +4,6 @@ from typing import Generator
 
 from openai import OpenAI
 
-from apps.ai.models import Thought, ToolUse
 from apps.ai.tools import TOOLS, execute_tool
 
 from .base import BaseProvider
@@ -24,12 +23,11 @@ class OpenAIProvider(BaseProvider):
         except json.JSONDecodeError:
             arguments = {}
         result = execute_tool(item.name, arguments)
-        ToolUse.objects.create(
-            message_id=self.message.id,
-            tool_name=item.name,
-            input_data=arguments,
-            result=result,
-        )
+        self._pending_tool_uses.append({
+            "tool_name": item.name,
+            "input_data": arguments,
+            "result": result,
+        })
         messages.append({
             "type": "function_call_output",
             "call_id": item.call_id,
@@ -57,10 +55,7 @@ class OpenAIProvider(BaseProvider):
                         yield ("thinking", event.delta)
                     elif event.type == "response.reasoning_summary_text.done":
                         if thinking_buffer:
-                            Thought.objects.create(
-                                message_id=self.message.id,
-                                content="".join(thinking_buffer),
-                            )
+                            self._pending_thoughts.append("".join(thinking_buffer))
                             thinking_buffer = []
                     elif event.type == "response.output_text.delta":
                         full_response.append(event.delta)
@@ -87,7 +82,4 @@ class OpenAIProvider(BaseProvider):
             for item in tool_call_items:
                 self._call_tool(self.messages, item)
 
-        assistant_reply = "".join(full_response)
-        self.update_memory(self.message_content, assistant_reply, self.user_id)
-        self._persist_message(role="assistant", content=assistant_reply, model=self.MODEL, responding_to=self.message)
-        return assistant_reply
+        return self._finish_response("".join(full_response))

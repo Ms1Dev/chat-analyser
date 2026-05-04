@@ -56,7 +56,7 @@ def conversation_messages(request, convo_id):
     except Conversation.DoesNotExist:
         return JsonResponse({'error': 'Not found'}, status=404)
     messages = []
-    for msg in convo.messages.prefetch_related('thoughts', 'tool_uses', 'responding_to__memories'):
+    for msg in convo.messages.prefetch_related('thoughts', 'tool_uses', 'memories'):
         messages.append({
             'id': msg.id,
             'role': msg.role,
@@ -64,10 +64,7 @@ def conversation_messages(request, convo_id):
             'model': msg.model,
             'thoughts': list(msg.thoughts.values('id', 'content', 'created_at')),
             'tool_uses': list(msg.tool_uses.values('id', 'tool_name', 'input_data', 'result', 'created_at')),
-            'memories': list(
-                msg.responding_to.memories.values('id', 'memory_id', 'data')
-                if msg.responding_to_id else []
-            ),
+            'memories': list(msg.memories.values('id', 'memory_id', 'data')),
         })
     messages_html = render_to_string(
         'ai/index.html#messages', {'messages': messages, 'title': convo.title}, request=request

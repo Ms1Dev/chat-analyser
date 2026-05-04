@@ -1,16 +1,6 @@
 
 <div id="{{ message.id }}" class="message assistant">
   {{ message.content|linebreaks }}
-<div class="bg-base-100 border-base-300 collapse border">
-  <input type="checkbox" class="peer" />
-  <div
-    class="collapse-title bg-primary text-primary-content peer-checked:bg-secondary peer-checked:text-secondary-content"
-  >
-    Stats
-  </div>
-  <div
-    class="collapse-content bg-primary text-primary-content peer-checked:bg-secondary peer-checked:text-secondary-content"
-  >
     <div class="tabs tabs-box">
 
       <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Info" checked="checked" />
@@ -55,8 +45,6 @@
           </ul>
         </div>
     </div>
-  </div>
-  </div>
 </div>
   
 </div>

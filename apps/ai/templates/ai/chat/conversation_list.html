@@ -1,15 +1,21 @@
 
+<ul class="menu rounded-box w-56">
 {% for convo in conversations %}
-    <div 
-        class="convo-item" 
+    <li
         data-convo-id="{{ convo.id }}"
         hx-get="{% url 'conversation-messages' convo.id %}"
         hx-target="#chat-messages"
         hx-swap="innerHTML"
     >
-        {{ convo.title }}
-    </div>
+        <button>
+            {{ convo.title }}
+        </button>
+    </li>
     {% empty %}
+    
     <div class="convo-item
-        "><em>No conversations yet</em></div>
+        "><em>No conversations yet</em>
+    </div>
+
 {% endfor %}
+</ul>
