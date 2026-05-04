@@ -21,7 +21,7 @@
             {% if msg.role == 'user' %}
               {% include "ai/chat/partials/sent.html" with message_content=msg.content %}
             {% else %}
-              {% include "ai/chat/partials/received.html" with message_content=msg.content message_id=msg.id %}
+              {% include "ai/chat/partials/received.html" with message=msg %}
             {% endif %}
           {% endfor %}
         {% endpartialdef %}
