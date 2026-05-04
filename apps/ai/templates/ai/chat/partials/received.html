@@ -1,4 +1,62 @@
 
-<div id="{{ message_id }}" class="message assistant">
-    {{ message.content|linebreaks }}
+<div id="{{ message.id }}" class="message assistant">
+  {{ message.content|linebreaks }}
+<div class="bg-base-100 border-base-300 collapse border">
+  <input type="checkbox" class="peer" />
+  <div
+    class="collapse-title bg-primary text-primary-content peer-checked:bg-secondary peer-checked:text-secondary-content"
+  >
+    Stats
+  </div>
+  <div
+    class="collapse-content bg-primary text-primary-content peer-checked:bg-secondary peer-checked:text-secondary-content"
+  >
+    <div class="tabs tabs-box">
+
+      <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Info" checked="checked" />
+        <div class="tab-content bg-base-100 border-base-300 p-6">
+          <ul class="list-disc pl-6">
+            <li><strong>Tokens:</strong> 123</li>
+            <li><strong>Created at:</strong> {{ message.created_at }}</li>
+            <li><strong>Model:</strong> {{ message.model }}s</li>
+          </ul>
+        </div>
+
+        <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Memories" checked="checked" 
+          {% if not message.memories %}disabled{% endif %}
+        />
+        <div class="tab-content bg-base-100 border-base-300 p-6">
+          <ul class="list-disc pl-6">
+            {% for mem in message.memories %}
+              <li>{{ mem }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Thoughts" 
+          {% if message.thoughts %}{% else %}disabled{% endif %}
+        />
+        <div class="tab-content bg-base-100 border-base-300 p-6">
+          <ul class="list-disc pl-6">
+            {% for thought in message.thoughts %}
+              <li>{{ thought }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Tool use" 
+          {% if message.tool_uses %}{% else %}disabled{% endif %}
+        />
+        <div class="tab-content bg-base-100 border-base-300 p-6">
+          <ul class="list-disc pl-6">
+            {% for tool_use in message.tool_uses %}
+              <li>{{ tool_use }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+    </div>
+  </div>
+  </div>
+</div>
+  
 </div>
