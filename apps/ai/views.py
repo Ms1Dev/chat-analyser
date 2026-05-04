@@ -22,7 +22,7 @@ def user_message(request, conversation_id):
     get_object_or_404(Conversation, id=conversation_id, user=request.user)
 
     input_html = render_to_string(
-        "ai/chat/input.html", {"conversation_id": conversation_id}, request=request
+        "ai/chat/input.html", {"conversation_id": conversation_id, "disabled": True}, request=request
     )
     oob_user_msg = render_to_string(
         "ai/chat/partials/oob-sent.html", {"message_content": message_content}, request=request

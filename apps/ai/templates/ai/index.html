@@ -78,6 +78,8 @@
     .on("chat_done", ({ html }) => {
       const typing = document.querySelector(".assistant-typing");
       if (typing && html) typing.outerHTML = html;
+      const btn = document.querySelector("#chat-input button[type=submit]");
+      if (btn) btn.disabled = false;
     })
     .connect();
 </script>

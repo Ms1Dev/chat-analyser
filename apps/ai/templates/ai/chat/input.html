@@ -7,6 +7,6 @@
 >
   <div class="flex gap-2">
     <input type="text" name="message" autocomplete="off" class="input input-bordered flex-1" />
-    <button type="submit" class="btn btn-primary" {% if not conversation_id %}disabled{% endif %}>Send</button>
+    <button type="submit" class="btn btn-primary" {% if not conversation_id or disabled %}disabled{% endif %}>Send</button>
   </div>
 </form>
