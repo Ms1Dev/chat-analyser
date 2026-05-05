@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
 
 from .inference import dispatch_chat_inference
@@ -20,14 +21,19 @@ def index(request):
 def start(request):
     if request.method == 'POST':
         message_content = request.POST.get("message")
-        convo = Conversation.objects.create(user=request.user)
+        convo = Conversation.objects.create(
+            user=request.user,
+            title=message_content[:50]
+        )
 
         # Render the empty window with the message stored for auto-submit.
         # window.html fires a load-triggered POST to user_message, which runs
         # the full send flow (disable input, OOB sent/typing, dispatch inference).
         ctx = {'messages': [], 'has_more': False, 'oldest_id': None,
                'conversation_id': convo.id, 'initial_message': message_content}
-        return HttpResponse(render_to_string('ai/chat/window.html', ctx, request=request))
+        response = HttpResponse(render_to_string('ai/chat/window.html', ctx, request=request))
+        response["HX-Push-Url"] = reverse('conversation-messages', args=[convo.id])
+        return response
     return render(request, 'ai/chat/start.html')
 
 
@@ -99,12 +105,23 @@ def conversation_messages(request, conversation_id):
         for msg in batch
     ]
     oldest_id = batch[-1].id if batch else None
-    ctx = {'messages': messages, 'has_more': has_more, 'oldest_id': oldest_id, 'conversation_id': conversation_id}
 
-    if before_id:
-        return HttpResponse(render_to_string('ai/chat/partials/messages-page.html', ctx, request=request))
-
-    return HttpResponse(render_to_string('ai/chat/window.html', ctx, request=request))
+    conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
+    
+    ctx = {
+        'messages': messages, 
+        'has_more': has_more, 
+        'oldest_id': oldest_id, 
+        'conversation_id': conversation_id,
+        'conversations': conversations
+        }
+    
+    if request.headers.get('Hx-Request'):
+        if before_id:
+            return HttpResponse(render_to_string('ai/chat/partials/messages-page.html', ctx, request=request))
+        return HttpResponse(render_to_string('ai/index.html#chat-messages', ctx, request=request))
+    else:
+        return render(request, 'ai/index.html', ctx)
 
 
 @login_required
