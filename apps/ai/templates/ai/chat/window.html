@@ -1,4 +1,4 @@
-<div class="chat-messages flex flex-col-reverse overflow-y-auto" id="chat-messages">
+<div class="chat-messages flex flex-col-reverse overflow-y-auto flex-1" id="chat-messages">
     {% for msg in messages %}
     {% if msg.role == 'user' %}
         {% include "ai/chat/partials/sent.html" with message_content=msg.content %}
