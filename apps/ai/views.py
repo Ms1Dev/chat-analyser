@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
@@ -14,7 +14,11 @@ from .models import Conversation
 def index(request):
     conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
     conversation_id = request.GET.get('conversation_id')
-    return render(request, 'ai/index.html', {'conversations': conversations, 'conversation_id': conversation_id})
+    return render(request, 'ai/index.html', {
+        'conversations': conversations,
+        'conversation_id': conversation_id,
+        'active_conversation_id': int(conversation_id) if conversation_id else None,
+    })
 
 
 @login_required
@@ -29,9 +33,12 @@ def start(request):
         # Render the empty window with the message stored for auto-submit.
         # window.html fires a load-triggered POST to user_message, which runs
         # the full send flow (disable input, OOB sent/typing, dispatch inference).
+        conversations = list(Conversation.objects.filter(user=request.user).values('id', 'title'))
         ctx = {'messages': [], 'has_more': False, 'oldest_id': None,
                'conversation_id': convo.id, 'initial_message': message_content}
-        response = HttpResponse(render_to_string('ai/chat/window.html', ctx, request=request))
+        oob_ctx = {'conversations': conversations, 'active_conversation_id': convo.id}
+        oob_html = render_to_string('ai/chat/partials/oob-conversation-list.html', oob_ctx, request=request)
+        response = HttpResponse(render_to_string('ai/chat/window.html', ctx, request=request) + oob_html)
         response["HX-Push-Url"] = reverse('conversation-messages', args=[convo.id])
         return response
     return render(request, 'ai/chat/start.html')
@@ -66,13 +73,6 @@ def conversation_list(request):
     return JsonResponse({'conversations': convos})
 
 
-@login_required
-@require_http_methods(['POST'])
-def conversation_create(request):
-    convo = Conversation.objects.create(user=request.user)
-    return JsonResponse({'id': convo.id, 'title': convo.title})
-
-
 PAGE_SIZE = 20
 
 
@@ -81,7 +81,7 @@ def conversation_messages(request, conversation_id):
     try:
         convo = Conversation.objects.get(id=conversation_id, user=request.user)
     except Conversation.DoesNotExist:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return redirect('index')
 
     before_id = request.GET.get('before')
     qs = convo.messages.prefetch_related('thoughts', 'tool_uses', 'memories').order_by('-id')
@@ -109,17 +109,20 @@ def conversation_messages(request, conversation_id):
     conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
     
     ctx = {
-        'messages': messages, 
-        'has_more': has_more, 
-        'oldest_id': oldest_id, 
+        'messages': messages,
+        'has_more': has_more,
+        'oldest_id': oldest_id,
         'conversation_id': conversation_id,
-        'conversations': conversations
-        }
+        'active_conversation_id': conversation_id,
+        'conversations': conversations,
+    }
     
     if request.headers.get('Hx-Request'):
         if before_id:
             return HttpResponse(render_to_string('ai/chat/partials/messages-page.html', ctx, request=request))
-        return HttpResponse(render_to_string('ai/index.html#chat-messages', ctx, request=request))
+        oob_ctx = {'conversations': conversations, 'active_conversation_id': conversation_id}
+        oob_html = render_to_string('ai/chat/partials/oob-conversation-list.html', oob_ctx, request=request)
+        return HttpResponse(render_to_string('ai/chat/window.html', ctx, request=request) + oob_html)
     else:
         return render(request, 'ai/index.html', ctx)
 
@@ -138,5 +141,9 @@ def conversation_delete(request, conversation_id):
     memories = results.get("results", [])
     for m in memories:
         memory.delete(m["id"])
+
+    current_url = request.headers.get('HX-Current-URL', '')
+    if str(conversation_id) in current_url:
+        return HttpResponse(status=200, headers={'HX-Redirect': reverse('index')})
 
     return JsonResponse({'success': True})
