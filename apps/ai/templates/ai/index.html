@@ -14,22 +14,12 @@
     </div>
 
     <!-- Main chat -->
-    <div class="chat-main">
-      <div class="chat-messages flex flex-col-reverse overflow-y-auto" id="chat-messages">
-      {% partialdef messages %}
-          {% for msg in messages %}
-          {% if msg.role == 'user' %}
-              {% include "ai/chat/partials/sent.html" with message_content=msg.content %}
-          {% else %}
-              {% include "ai/chat/partials/received.html" with message=msg %}
-          {% endif %}
-          {% endfor %}
-          {% include "ai/chat/partials/load-more-sentinel.html" %}
-      {% endpartialdef %}
-      </div>
-      <div class="chat-input-row">
-        {% include "ai/chat/input.html" %}
-      </div>
+    <div class="chat-main" id="chat-main">
+      {% if conversation_id %}
+        {% include "ai/chat/window.html" %}
+      {% else %}
+        {% include "ai/chat/start.html" %}
+      {% endif %}
     </div>
   </div>
 </div>

@@ -12,7 +12,23 @@ from .models import Conversation
 @login_required
 def index(request):
     conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
-    return render(request, 'ai/index.html', {'conversations': conversations})
+    conversation_id = request.GET.get('conversation_id')
+    return render(request, 'ai/index.html', {'conversations': conversations, 'conversation_id': conversation_id})
+
+
+@login_required
+def start(request):
+    if request.method == 'POST':
+        message_content = request.POST.get("message")
+        convo = Conversation.objects.create(user=request.user)
+
+        # Render the empty window with the message stored for auto-submit.
+        # window.html fires a load-triggered POST to user_message, which runs
+        # the full send flow (disable input, OOB sent/typing, dispatch inference).
+        ctx = {'messages': [], 'has_more': False, 'oldest_id': None,
+               'conversation_id': convo.id, 'initial_message': message_content}
+        return HttpResponse(render_to_string('ai/chat/window.html', ctx, request=request))
+    return render(request, 'ai/chat/start.html')
 
 
 @login_required
@@ -38,7 +54,6 @@ def user_message(request, conversation_id):
     return response
 
 
-
 @login_required
 def conversation_list(request):
     convos = list(Conversation.objects.filter(user=request.user).values('id', 'title'))
@@ -56,9 +71,9 @@ PAGE_SIZE = 20
 
 
 @login_required
-def conversation_messages(request, convo_id):
+def conversation_messages(request, conversation_id):
     try:
-        convo = Conversation.objects.get(id=convo_id, user=request.user)
+        convo = Conversation.objects.get(id=conversation_id, user=request.user)
     except Conversation.DoesNotExist:
         return JsonResponse({'error': 'Not found'}, status=404)
 
@@ -84,27 +99,25 @@ def conversation_messages(request, convo_id):
         for msg in batch
     ]
     oldest_id = batch[-1].id if batch else None
-    ctx = {'messages': messages, 'has_more': has_more, 'oldest_id': oldest_id, 'convo_id': convo_id}
+    ctx = {'messages': messages, 'has_more': has_more, 'oldest_id': oldest_id, 'conversation_id': conversation_id}
 
     if before_id:
         return HttpResponse(render_to_string('ai/chat/partials/messages-page.html', ctx, request=request))
 
-    messages_html = render_to_string('ai/index.html#messages', {**ctx, 'title': convo.title}, request=request)
-    oob_input = render_to_string('ai/chat/input.html', {'conversation_id': convo_id, 'oob': True}, request=request)
-    return HttpResponse(messages_html + oob_input)
+    return HttpResponse(render_to_string('ai/chat/window.html', ctx, request=request))
 
 
 @login_required
 @require_http_methods(['DELETE'])
-def conversation_delete(request, convo_id):
+def conversation_delete(request, conversation_id):
     try:
-        convo = Conversation.objects.get(id=convo_id, user=request.user)
+        convo = Conversation.objects.get(id=conversation_id, user=request.user)
     except Conversation.DoesNotExist:
         return JsonResponse({'error': 'Not found'}, status=404)
 
     convo.delete()
 
-    results = memory.get_all(filters={"user_id": "user_" + str(request.user.id), "conversation_id": str(convo_id)}, top_k=1000)
+    results = memory.get_all(filters={"user_id": "user_" + str(request.user.id), "conversation_id": str(conversation_id)}, top_k=1000)
     memories = results.get("results", [])
     for m in memories:
         memory.delete(m["id"])

@@ -5,7 +5,7 @@
         <button
             data-convo-id="{{ convo.id }}"
             hx-get="{% url 'conversation-messages' convo.id %}"
-            hx-target="#chat-messages"
+            hx-target="#chat-main"
             hx-swap="innerHTML"
             class="flex flex-row justify-between items-center convo-item"
         >
