@@ -11,23 +11,29 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="{% static 'ai/tailwind.css' %}" />
     <link rel="stylesheet" href="{% static 'ai/style.css' %}" />
     {% block extra_head %}{% endblock %}
   </head>
-  <body>
-    {% csrf_token %}
+  <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
-    <div class="topbar">
-      <a class="topbar-title" href="{% url 'index' %}"
-        >{% block topbar_title %}Chat Analyser{% endblock %}</a
-      >
-      <div style="display: flex; gap: 6px; align-items: center">
-        {% block topbar_actions %}{% endblock %}
-        <button class="btn-icon" id="dark-toggle" title="Toggle dark mode">☽</button>
-        <form method="post" action="{% url 'account_logout' %}" style="margin:0">
-          {% csrf_token %}
-          <button type="submit" class="btn-icon" title="Sign out">⏻</button>
-        </form>
+    {% csrf_token %}
+    <div class="navbar bg-base-100 shadow-sm">
+      <div class="flex-1">
+        <a href="/" class="btn btn-ghost text-xl">Chat Analyser</a>
+      </div>
+      <div class="flex-none">
+        <ul class="menu menu-horizontal px-1">
+          <li>
+            <button class="btn-icon" id="dark-toggle" title="Toggle dark mode">☽</button>
+          </li>
+          <li>
+            <form method="post" action="{% url 'account_logout' %}" style="margin:0">
+              {% csrf_token %}
+              <button type="submit" class="btn-icon" title="Sign out">⏻</button>
+            </form>
+          </li>
+        </ul>
       </div>
     </div>
 

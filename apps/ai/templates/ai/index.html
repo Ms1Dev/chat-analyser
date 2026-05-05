@@ -3,30 +3,46 @@
 <div class="app">
 
   <!-- ── Chat ──────────────────────────────────── -->
-  <div class="panel chat-panel">
     <!-- Conversations sidebar -->
-    <div class="convos-sidebar">
-      <div class="convos-header">
+    <div class="convos-sidebar bg-base-200">
+      <div class="convos-header bg-white/80 dark:bg-gray-800/80">
         Chats
-        <button class="btn-new" id="new-convo-btn" title="New chat">+</button>
       </div>
-      <div class="convos-list" id="convos-list"></div>
+      {% include "ai/chat/conversation_list.html" %}
     </div>
 
     <!-- Main chat -->
-    <div class="chat-main">
-      <div class="chat-messages" id="chat-messages"></div>
-      <div class="chat-input-row">
-        <textarea
-          class="chat-input"
-          id="chat-input"
-          placeholder="Type a message…"
-          rows="2"
-        ></textarea>
-        <button class="btn btn-primary" id="send-btn">Send</button>
-      </div>
+    <div class="chat-main" id="chat-main">
+      {% if conversation_id %}
+      {% partialdef chat-messages inline %}
+        <div class="chat-messages flex flex-col-reverse overflow-y-auto flex-1" id="chat-messages">
+          {% for msg in messages %}
+          {% if msg.role == 'user' %}
+              {% include "ai/chat/partials/sent.html" with message_content=msg.content %}
+          {% else %}
+              {% include "ai/chat/partials/received.html" with message=msg %}
+          {% endif %}
+          {% endfor %}
+          {% include "ai/chat/partials/load-more-sentinel.html" %}
+        </div>
+        <div class="chat-input-row">
+            {% include "ai/chat/input.html" %}
+        </div>
+        {% if initial_message %}
+          <div
+              hx-post="{% url 'user-message' conversation_id %}"
+              hx-trigger="load"
+              hx-target="#chat-input"
+              hx-swap="outerHTML"
+              hx-vals='{"message": "{{ initial_message|escapejs }}"}'
+              style="display:none"
+          ></div>
+        {% endif %}
+      {% endpartialdef %}
+      {% else %}
+        {% include "ai/chat/start.html" %}
+      {% endif %}
     </div>
-  </div>
 </div>
 
 
@@ -52,18 +68,30 @@
   document.getElementById("dark-toggle").addEventListener("click", toggleDark);
 
 
+  function scrollChat() {
+    const msgs = document.getElementById("chat-messages");
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  document.body.addEventListener('scroll-to-bottom', () => {
+    const msgs = document.getElementById("chat-messages");
+    if (msgs) msgs.scrollTo({ top: msgs.scrollHeight, behavior: 'smooth' });
+  });
+
   // ── Relay ────────────────────────────────────────────
-  //
-  // Tool schemas are defined server-side in ai/frontend_tools.py.
-  // Here we register the browser-side handlers that run when
-  // the LLM calls one of those tools. The server dispatches
-  // the call via SSE; the relay receives it and calls the
-  // matching handler.
-  //
-  // ─────────────────────────────────────────────────────
   window._relay = new Relay()
     .registerHtmxTriggers()
     .on("set_dark_mode", ({ dark }) => setDark(dark))
+    .on("chat_token", ({ text }) => {
+      const bubble = document.querySelector(".assistant-typing .chat-bubble");
+      if (bubble) { bubble.textContent += text; scrollChat(); }
+    })
+    .on("chat_done", ({ html }) => {
+      const typing = document.querySelector(".assistant-typing");
+      if (typing && html) typing.outerHTML = html;
+      const btn = document.querySelector("#chat-input button[type=submit]");
+      if (btn) btn.disabled = false;
+    })
     .connect();
 </script>
 {% endblock %}

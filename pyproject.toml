@@ -3,7 +3,7 @@ name = "chat-analyser"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "django>=5.0,<6.0",
+    "django>=6.0,<7.0",
     "psycopg2-binary>=2.9",
     "gunicorn>=21.0",
     "openai>=1.0",
@@ -15,4 +15,5 @@ dependencies = [
     "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
     "anthropic>=0.97.0",
     "tiktoken>=0.7",
+    "django-htmx>=1.27.0",
 ]

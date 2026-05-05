@@ -1,0 +1,13 @@
+<div class="chat-messages flex flex-col-reverse overflow-y-auto" id="chat-messages">
+{% for msg in messages %}
+{% if msg.role == 'user' %}
+    {% include "ai/chat/partials/sent.html" with message_content=msg.content %}
+{% else %}
+    {% include "ai/chat/partials/received.html" with message=msg %}
+{% endif %}
+{% endfor %}
+{% include "ai/chat/partials/load-more-sentinel.html" %}
+<div>
+<div class="chat-input-row">
+    {% include "ai/chat/input.html" %}
+</div>

@@ -1,4 +1,12 @@
 
+dev:
+    #!/usr/bin/env bash
+    docker compose up -d
+    npm run watch
+
+css:
+    npm run watch
+
 makemigrations:
     docker compose run --rm web uv run manage.py makemigrations
 

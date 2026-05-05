@@ -1,61 +1,70 @@
-import json
-
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, StreamingHttpResponse
-from django.shortcuts import render
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
 
+from .inference import dispatch_chat_inference
+from .memory import memory
 from .models import Conversation
-from .providers.anthropic import AnthropicProvider
-from .providers.openai import OpenAIProvider
 
 
 @login_required
 def index(request):
-    return render(request, 'ai/index.html')
+    conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
+    conversation_id = request.GET.get('conversation_id')
+    return render(request, 'ai/index.html', {
+        'conversations': conversations,
+        'conversation_id': conversation_id,
+        'active_conversation_id': int(conversation_id) if conversation_id else None,
+    })
+
+
+@login_required
+def start(request):
+    if request.method == 'POST':
+        message_content = request.POST.get("message")
+        convo = Conversation.objects.create(
+            user=request.user,
+            title=message_content[:50]
+        )
+
+        # Render the empty window with the message stored for auto-submit.
+        # window.html fires a load-triggered POST to user_message, which runs
+        # the full send flow (disable input, OOB sent/typing, dispatch inference).
+        conversations = list(Conversation.objects.filter(user=request.user).values('id', 'title'))
+        ctx = {'messages': [], 'has_more': False, 'oldest_id': None,
+               'conversation_id': convo.id, 'initial_message': message_content}
+        oob_ctx = {'conversations': conversations, 'active_conversation_id': convo.id}
+        oob_html = render_to_string('ai/chat/partials/oob-conversation-list.html', oob_ctx, request=request)
+        response = HttpResponse(render_to_string('ai/chat/window.html', ctx, request=request) + oob_html)
+        response["HX-Push-Url"] = reverse('conversation-messages', args=[convo.id])
+        return response
+    return render(request, 'ai/chat/start.html')
 
 
 @login_required
 @require_POST
-def chat(request):
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "invalid JSON"}, status=400)
-    message_text = data.get("message", "")
-    conversation_id = data.get("conversation_id")
+def user_message(request, conversation_id):
+    message_content = request.POST.get("message")
+    get_object_or_404(Conversation, id=conversation_id, user=request.user)
 
-    if conversation_id:
-        try:
-            conversation = Conversation.objects.get(id=conversation_id, user=request.user)
-        except Conversation.DoesNotExist:
-            conversation = Conversation.objects.create(user=request.user)
-    else:
-        conversation = Conversation.objects.create(user=request.user)
+    input_html = render_to_string(
+        "ai/chat/input.html", {"conversation_id": conversation_id, "disabled": True}, request=request
+    )
+    oob_user_msg = render_to_string(
+        "ai/chat/partials/oob-sent.html", {"message_content": message_content}, request=request
+    )
+    oob_typing = render_to_string(
+        "ai/chat/partials/oob-typing.html", request=request
+    )
 
-    if conversation.title == "New Chat":
-        conversation.title = message_text[:50]
-        conversation.save()
+    dispatch_chat_inference(request.user.id, message_content, conversation_id)
 
-    provider = OpenAIProvider(message_text, conversation_id=conversation.id)
-
-    def stream():
-        yield f"data: {json.dumps({'conversation_id': conversation.id})}\n\n"
-
-        full_response = []
-        for kind, chunk in provider.stream_response():
-            if kind == "thinking":
-                yield f"data: {json.dumps({'thinking': chunk})}\n\n"
-            else:
-                full_response.append(chunk)
-                yield f"data: {json.dumps({'text': chunk})}\n\n"
-
-        yield "data: [DONE]\n\n"
-
-    resp = StreamingHttpResponse(stream(), content_type="text/event-stream")
-    resp["X-Accel-Buffering"] = "no"
-    resp["Cache-Control"] = "no-cache"
-    return resp
+    response = HttpResponse(input_html + oob_user_msg + oob_typing)
+    response['HX-Trigger-After-Settle'] = 'scroll-to-bottom'
+    return response
 
 
 @login_required
@@ -64,22 +73,27 @@ def conversation_list(request):
     return JsonResponse({'conversations': convos})
 
 
-@login_required
-@require_http_methods(['POST'])
-def conversation_create(request):
-    convo = Conversation.objects.create(user=request.user)
-    return JsonResponse({'id': convo.id, 'title': convo.title})
+PAGE_SIZE = 20
 
 
 @login_required
-def conversation_messages(request, convo_id):
+def conversation_messages(request, conversation_id):
     try:
-        convo = Conversation.objects.get(id=convo_id, user=request.user)
+        convo = Conversation.objects.get(id=conversation_id, user=request.user)
     except Conversation.DoesNotExist:
-        return JsonResponse({'error': 'Not found'}, status=404)
-    messages = []
-    for msg in convo.messages.prefetch_related('thoughts', 'tool_uses', 'memories'):
-        messages.append({
+        return redirect('index')
+
+    before_id = request.GET.get('before')
+    qs = convo.messages.prefetch_related('thoughts', 'tool_uses', 'memories').order_by('-id')
+    if before_id:
+        qs = qs.filter(id__lt=before_id)
+
+    batch = list(qs[:PAGE_SIZE + 1])
+    has_more = len(batch) > PAGE_SIZE
+    batch = batch[:PAGE_SIZE]
+
+    messages = [
+        {
             'id': msg.id,
             'role': msg.role,
             'content': msg.content,
@@ -87,5 +101,49 @@ def conversation_messages(request, convo_id):
             'thoughts': list(msg.thoughts.values('id', 'content', 'created_at')),
             'tool_uses': list(msg.tool_uses.values('id', 'tool_name', 'input_data', 'result', 'created_at')),
             'memories': list(msg.memories.values('id', 'memory_id', 'data')),
-        })
-    return JsonResponse({'messages': messages, 'title': convo.title})
+        }
+        for msg in batch
+    ]
+    oldest_id = batch[-1].id if batch else None
+
+    conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
+    
+    ctx = {
+        'messages': messages,
+        'has_more': has_more,
+        'oldest_id': oldest_id,
+        'conversation_id': conversation_id,
+        'active_conversation_id': conversation_id,
+        'conversations': conversations,
+    }
+    
+    if request.headers.get('Hx-Request'):
+        if before_id:
+            return HttpResponse(render_to_string('ai/chat/partials/messages-page.html', ctx, request=request))
+        oob_ctx = {'conversations': conversations, 'active_conversation_id': conversation_id}
+        oob_html = render_to_string('ai/chat/partials/oob-conversation-list.html', oob_ctx, request=request)
+        return HttpResponse(render_to_string('ai/chat/window.html', ctx, request=request) + oob_html)
+    else:
+        return render(request, 'ai/index.html', ctx)
+
+
+@login_required
+@require_http_methods(['DELETE'])
+def conversation_delete(request, conversation_id):
+    try:
+        convo = Conversation.objects.get(id=conversation_id, user=request.user)
+    except Conversation.DoesNotExist:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+    convo.delete()
+
+    results = memory.get_all(filters={"user_id": "user_" + str(request.user.id), "conversation_id": str(conversation_id)}, top_k=1000)
+    memories = results.get("results", [])
+    for m in memories:
+        memory.delete(m["id"])
+
+    current_url = request.headers.get('HX-Current-URL', '')
+    if str(conversation_id) in current_url:
+        return HttpResponse(status=200, headers={'HX-Redirect': reverse('index')})
+
+    return JsonResponse({'success': True})

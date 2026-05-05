@@ -3,7 +3,6 @@ from typing import Generator
 
 import anthropic
 
-from apps.ai.models import Thought, ToolUse
 from apps.ai.tools import TOOLS, execute_tool
 
 from .base import BaseProvider
@@ -21,14 +20,13 @@ class AnthropicProvider(BaseProvider):
             for t in tools
         ]
 
-    def _call_tool(self, messages: list, block, message_id) -> None:
+    def _call_tool(self, messages: list, block, message_id=None) -> None:
         result = execute_tool(block.name, block.input)
-        ToolUse.objects.create(
-            message_id=message_id,
-            tool_name=block.name,
-            input_data=block.input,
-            result=result,
-        )
+        self._pending_tool_uses.append({
+            "tool_name": block.name,
+            "input_data": block.input,
+            "result": result,
+        })
         messages.append({
             "role": "user",
             "content": [{
@@ -64,10 +62,7 @@ class AnthropicProvider(BaseProvider):
                             yield ("text", event.delta.text)
                     elif event.type == "content_block_stop":
                         if thinking_buffer:
-                            Thought.objects.create(
-                                message_id=self.message.id,
-                                content="".join(thinking_buffer),
-                            )
+                            self._pending_thoughts.append("".join(thinking_buffer))
                             thinking_buffer = []
 
                 response = stream.get_final_message()
@@ -80,7 +75,4 @@ class AnthropicProvider(BaseProvider):
             for block in tool_use_blocks:
                 self._call_tool(self.messages, block, self.message.id)
 
-        assistant_reply = "".join(full_response)
-        self.update_memory(self.message_content, assistant_reply, self.user_id)
-        self._persist_message(role="assistant", content=assistant_reply, model=self.MODEL)
-        return assistant_reply
+        return self._finish_response("".join(full_response))

@@ -37,7 +37,7 @@ export class Relay {
       let release
       const held = new Promise((resolve) => { release = resolve })
 
-      es.addEventListener('tool_call', (event) => {
+      es.addEventListener('relay', (event) => {
         const data = JSON.parse(event.data)
         // Dispatch locally — BroadcastChannel doesn't deliver to the sender
         this._dispatch(data)
@@ -65,7 +65,7 @@ export class Relay {
     this._channel.onmessage = ({ data }) => this._dispatch(data)
   }
 
-  _dispatch({ tool, args }) {
-    this._handlers.get(tool)?.(args)
+  _dispatch({ type, args = {} }) {
+    this._handlers.get(type)?.(args)
   }
 }

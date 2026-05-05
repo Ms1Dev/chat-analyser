@@ -20,8 +20,7 @@ def events(request):
             while True:
                 try:
                     event = q.get(timeout=5)
-                    event_type = event.get("type", "message")
-                    yield f"event: {event_type}\ndata: {json.dumps(event)}\n\n"
+                    yield f"event: relay\ndata: {json.dumps(event)}\n\n"
                 except Empty:
                     yield ": heartbeat\n\n"
         finally:

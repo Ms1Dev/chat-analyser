@@ -1,0 +1,42 @@
+
+<ul id="conversation-list" {% if oob %}hx-swap-oob="true"{% endif %} class="menu rounded-box w-56">
+{% for convo in conversations %}
+    <li id="convo-item-{{ convo.id }}">
+        <button
+            data-convo-id="{{ convo.id }}"
+            hx-get="{% url 'conversation-messages' convo.id %}"
+            hx-target="#chat-main"
+            hx-swap="innerHTML"
+            hx-push-url="true"
+            class="flex flex-row justify-between items-center convo-item{% if convo.id == active_conversation_id %} menu-active{% endif %}"
+        >
+            {{ convo.title }}
+            <div class="dropdown" hx-inherit="false" onclick="event.stopPropagation()">
+                <div tabindex="0" role="button" class="hover:bg-base-200 rounded px-2 py-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
+                <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+                    <li>
+                        <a
+                            hx-delete="{% url 'conversation-delete' convo.id %}"
+                            hx-target="#convo-item-{{ convo.id }}"
+                            hx-swap="delete"
+                            hx-push-url="false"
+                        >
+                            Delete
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </button>
+    </li>
+    {% empty %}
+    
+    <div class="convo-item
+        "><em>No conversations yet</em>
+    </div>
+
+{% endfor %}
+</ul>
