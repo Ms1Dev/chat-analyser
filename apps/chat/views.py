@@ -5,6 +5,8 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
 
+from apps.agents.forms import AgentForm
+from apps.agents.models import Agent
 from apps.ai.inference import dispatch_chat_inference
 from apps.ai.memory import memory
 from apps.ai.models import Conversation
@@ -14,7 +16,7 @@ from apps.ai.models import Conversation
 def index(request):
     conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
     conversation_id = request.GET.get('conversation_id')
-    return render(request, 'ai/index.html', {
+    return render(request, 'chat/index.html', {
         'conversations': conversations,
         'conversation_id': conversation_id,
         'active_conversation_id': int(conversation_id) if conversation_id else None,
@@ -124,7 +126,30 @@ def conversation_messages(request, conversation_id):
         oob_html = render_to_string('chat/partials/oob-conversation-list.html', oob_ctx, request=request)
         return HttpResponse(render_to_string('chat/window.html', ctx, request=request) + oob_html)
     else:
-        return render(request, 'ai/index.html', ctx)
+        return render(request, 'chat/index.html', ctx)
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def settings(request):
+    agent = Agent.objects.filter(user=request.user).first()
+    if agent is None:
+        agent = Agent.objects.create(user=request.user, name='My Agent')
+
+    if request.method == 'POST':
+        form = AgentForm(request.POST, instance=agent)
+        if form.is_valid():
+            form.save()
+            if request.headers.get('HX-Request'):
+                return HttpResponse('<div id="settings-saved" class="alert alert-success">Saved</div>')
+    else:
+        form = AgentForm(instance=agent)
+
+    ctx = {'form': form}
+    if request.headers.get('HX-Request'):
+        return render(request, 'chat/settings.html', ctx)
+    conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
+    return render(request, 'chat/index.html', {**ctx, 'conversations': conversations, 'show_settings': True})
 
 
 @login_required

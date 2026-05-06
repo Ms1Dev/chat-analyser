@@ -11,8 +11,8 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="{% static 'ai/tailwind.css' %}" />
-    <link rel="stylesheet" href="{% static 'ai/style.css' %}" />
+    <link rel="stylesheet" href="{% static 'chat/tailwind.css' %}" />
+    <link rel="stylesheet" href="{% static 'chat/style.css' %}" />
     {% block extra_head %}{% endblock %}
   </head>
   <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
@@ -24,6 +24,16 @@
       </div>
       <div class="flex-none">
         <ul class="menu menu-horizontal px-1">
+          <li>
+            <a
+              hx-get="{% url 'settings' %}"
+              hx-target="#chat-main"
+              hx-swap="innerHTML"
+              hx-push-url="true"
+              class="btn-icon"
+              title="Settings"
+            >⚙</a>
+          </li>
           <li>
             <button class="btn-icon" id="dark-toggle" title="Toggle dark mode">☽</button>
           </li>

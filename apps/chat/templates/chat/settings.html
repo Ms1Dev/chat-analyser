@@ -1,0 +1,67 @@
+<div class="flex flex-col flex-1 overflow-y-auto p-8 max-w-2xl mx-auto w-full">
+  <h2 class="text-2xl font-bold mb-8">Settings</h2>
+
+  <form
+    hx-post="{% url 'settings' %}"
+    hx-target="#settings-saved"
+    hx-swap="outerHTML"
+  >
+    {% csrf_token %}
+
+    <div class="card bg-base-200 shadow-sm mb-6">
+      <div class="card-body gap-4">
+        <h3 class="card-title text-base">Agent</h3>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text">Name</span></label>
+          <input type="text" name="name" value="{{ form.name.value }}" class="input input-bordered">
+          {% if form.name.errors %}<span class="text-error text-sm">{{ form.name.errors.0 }}</span>{% endif %}
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text">System Prompt</span></label>
+          <textarea name="system_prompt" class="textarea textarea-bordered" rows="6">{{ form.system_prompt.value }}</textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-control">
+            <label class="label"><span class="label-text">Provider</span></label>
+            <select name="provider" class="select select-bordered">
+              <option value="anthropic" {% if form.provider.value == "anthropic" %}selected{% endif %}>Anthropic</option>
+              <option value="openai" {% if form.provider.value == "openai" %}selected{% endif %}>OpenAI</option>
+            </select>
+          </div>
+
+          <div class="form-control">
+            <label class="label"><span class="label-text">Model</span></label>
+            <input type="text" name="model" value="{{ form.model.value }}" class="input input-bordered">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-200 shadow-sm mb-6">
+      <div class="card-body gap-4">
+        <h3 class="card-title text-base">Context Budget</h3>
+        <p class="text-sm text-base-content/60">Fractions of the context window allocated to each source. Should sum to 1.</p>
+
+        {% for field in form.visible_fields %}
+          {% if "fraction" in field.name %}
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">{{ field.label }}</span>
+              <span class="label-text-alt text-base-content/50">0–1</span>
+            </label>
+            <input type="number" step="0.01" min="0" max="1" name="{{ field.name }}" value="{{ field.value }}" class="input input-bordered">
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <button type="submit" class="btn btn-primary">Save</button>
+      <div id="settings-saved"></div>
+    </div>
+  </form>
+</div>

@@ -37,7 +37,7 @@ Thumbs.db
 node_modules/
 
 # Generated CSS
-apps/ai/static/ai/tailwind.css
+apps/chat/static/chat/tailwind.css
 
 # Claude Code
 .claude/

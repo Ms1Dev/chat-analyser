@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tailwindcss -i src/input.css -o apps/ai/static/ai/tailwind.css --minify",
-    "watch": "tailwindcss -i src/input.css -o apps/ai/static/ai/tailwind.css --watch"
+    "build": "tailwindcss -i src/input.css -o apps/chat/static/chat/tailwind.css --minify",
+    "watch": "tailwindcss -i src/input.css -o apps/chat/static/chat/tailwind.css --watch"
   },
   "repository": {
     "type": "git",

@@ -14,7 +14,7 @@ from .models import Conversation
 def index(request):
     conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
     conversation_id = request.GET.get('conversation_id')
-    return render(request, 'ai/index.html', {
+    return render(request, 'chat/index.html', {
         'conversations': conversations,
         'conversation_id': conversation_id,
         'active_conversation_id': int(conversation_id) if conversation_id else None,
@@ -124,7 +124,7 @@ def conversation_messages(request, conversation_id):
         oob_html = render_to_string('chat/partials/oob-conversation-list.html', oob_ctx, request=request)
         return HttpResponse(render_to_string('chat/window.html', ctx, request=request) + oob_html)
     else:
-        return render(request, 'ai/index.html', ctx)
+        return render(request, 'chat/index.html', ctx)
 
 
 @login_required

@@ -1,4 +1,4 @@
-{% extends "ai/base.html" %} {% load static %} {% block content %}
+{% extends "chat/base.html" %} {% load static %} {% block content %}
 
 <div class="app">
 
@@ -13,7 +13,9 @@
 
     <!-- Main chat -->
     <div class="chat-main" id="chat-main">
-      {% if conversation_id %}
+      {% if show_settings %}
+        {% include "chat/settings.html" %}
+      {% elif conversation_id %}
       {% partialdef chat-messages inline %}
         <div class="chat-messages flex flex-col-reverse overflow-y-auto flex-1" id="chat-messages">
           {% for msg in messages %}
@@ -47,10 +49,10 @@
 
 
 {% endblock %} {% block scripts %}
-<script type="module" src="{% static 'ai/chat.js' %}"></script>
+<script type="module" src="{% static 'chat/chat.js' %}"></script>
 
 <script type="module">
-  import { api, esc } from '{% static "ai/utils.js" %}';
+  import { api, esc } from '{% static "chat/utils.js" %}';
   import { Relay } from "/static/relay.js";
 
   // ── Dark mode ───────────────────────────────────────

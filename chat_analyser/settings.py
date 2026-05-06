@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django_htmx",
     'apps.users',
     'apps.ai',
+    'apps.agents',
     'apps.relay',
     'apps.chat',
     'django_browser_reload',
