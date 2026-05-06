@@ -15,5 +15,17 @@ class Agent(models.Model):
     rag_fraction = models.FloatField(default=0.1)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def to_config(self) -> dict:
+        return {
+            'model': self.model,
+            'provider': self.provider,
+            'system_prompt': self.system_prompt,
+            'chat_history_fraction': self.chat_history_fraction,
+            'summarised_history_fraction': self.summarised_history_fraction,
+            'relevant_chat_history_fraction': self.relevant_chat_history_fraction,
+            'memory_fraction': self.memory_fraction,
+            'rag_fraction': self.rag_fraction,
+        }
+
     def __str__(self):
         return self.name

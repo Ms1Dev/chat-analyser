@@ -12,6 +12,7 @@ from apps.ai.memory import memory
 from apps.ai.models import Conversation
 
 
+
 @login_required
 def index(request):
     conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
@@ -27,8 +28,13 @@ def index(request):
 def start(request):
     if request.method == 'POST':
         message_content = request.POST.get("message")
+        agent = Agent.objects.filter(user=request.user).first()
+        if not agent:
+            agent = Agent.objects.create(user=request.user, name='My Agent')
+            
         convo = Conversation.objects.create(
             user=request.user,
+            agent=agent,
             title=message_content[:50]
         )
 
@@ -50,7 +56,7 @@ def start(request):
 @require_POST
 def user_message(request, conversation_id):
     message_content = request.POST.get("message")
-    get_object_or_404(Conversation, id=conversation_id, user=request.user)
+    convo = get_object_or_404(Conversation, id=conversation_id, user=request.user)
 
     input_html = render_to_string(
         "chat/input.html", {"conversation_id": conversation_id, "disabled": True}, request=request
@@ -62,7 +68,8 @@ def user_message(request, conversation_id):
         "chat/partials/oob-typing.html", request=request
     )
 
-    dispatch_chat_inference(request.user.id, message_content, conversation_id)
+    config = convo.agent.to_config() if convo.agent else {}
+    dispatch_chat_inference(request.user.id, message_content, conversation_id, config)
 
     response = HttpResponse(input_html + oob_user_msg + oob_typing)
     response['HX-Trigger-After-Settle'] = 'scroll-to-bottom'

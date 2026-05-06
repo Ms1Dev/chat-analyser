@@ -6,6 +6,7 @@ from django.db import models
 
 class Conversation(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    agent = models.ForeignKey('agents.Agent', null=True, blank=True, on_delete=models.SET_NULL, related_name='conversations')
     title = models.CharField(max_length=255, default='New Chat')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -21,6 +22,7 @@ class Message(models.Model):
     role = models.CharField(max_length=20)
     content = models.TextField()
     model = models.CharField(max_length=100, blank=True, default="")
+    agent_config_snapshot = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     responding_to = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='responses')
 

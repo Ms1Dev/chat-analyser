@@ -11,13 +11,7 @@
     <div class="card bg-base-200 shadow-sm mb-6">
       <div class="card-body gap-4">
         <h3 class="card-title text-base">Agent</h3>
-
-        <div class="form-control">
-          <label class="label"><span class="label-text">Name</span></label>
-          <input type="text" name="name" value="{{ form.name.value }}" class="input input-bordered">
-          {% if form.name.errors %}<span class="text-error text-sm">{{ form.name.errors.0 }}</span>{% endif %}
-        </div>
-
+        
         <div class="form-control">
           <label class="label"><span class="label-text">System Prompt</span></label>
           <textarea name="system_prompt" class="textarea textarea-bordered" rows="6">{{ form.system_prompt.value }}</textarea>

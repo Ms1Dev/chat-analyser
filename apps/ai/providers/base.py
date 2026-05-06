@@ -5,7 +5,7 @@ from apps.ai import context_budget as cb
 from apps.ai.memory import memory
 from apps.ai.models import Memory, Message, Thought, ToolUse, Conversation
 
-SYSTEM_PROMPT = """You are a helpful assistant."""
+DEFAULT_SYSTEM_PROMPT = """You are a helpful assistant."""
 
 
 class BaseProvider(ABC):
@@ -16,26 +16,28 @@ class BaseProvider(ABC):
     # replace with a threshold= arg on memory.search() and remove the manual filter.
     SIMILARITY_THRESHOLD = 0.35
 
-    def __init__(self, message_content, conversation_id):
+    def __init__(self, message_content, conversation_id, config: dict):
+        self._config = config
+        self.MODEL = config.get('model', self.MODEL)
         self.client = self._get_client()
         self.conversation_id = conversation_id
         self.conversation = Conversation.objects.get(id=conversation_id) if conversation_id else None
         self.user_id = "user_" + str(self.conversation.user_id if self.conversation else None)
         self.message = self._persist_message(role="user", content=message_content)
         self.message_content = message_content
-        self.system = SYSTEM_PROMPT
+        self.system = config.get('system_prompt') or DEFAULT_SYSTEM_PROMPT
         self._pending_memories: list[dict] = []
         self._pending_thoughts: list[str] = []
         self._pending_tool_uses: list[dict] = []
 
         system_tokens = cb.count_tokens(self.system)
         effective = cb.available_tokens(self.MODEL, system_tokens)
-        self.history_budget = int(effective * cb.CHAT_HISTORY_FRACTION)
-        self.summarised_history_budget = int(effective * cb.SUMMARISED_HISTORY_FRACTION)
-        relevant_history_budget = int(effective * cb.RELEVANT_CHAT_HISTORY_FRACTION)
-        
+        self.history_budget = int(effective * config.get('chat_history_fraction', cb.CHAT_HISTORY_FRACTION))
+        self.summarised_history_budget = int(effective * config.get('summarised_history_fraction', cb.SUMMARISED_HISTORY_FRACTION))
+        relevant_history_budget = int(effective * config.get('relevant_chat_history_fraction', cb.RELEVANT_CHAT_HISTORY_FRACTION))
+
         # relevant memories from other conversations
-        memory_budget = int(effective * cb.MEMORY_FRACTION)
+        memory_budget = int(effective * config.get('memory_fraction', cb.MEMORY_FRACTION))
 
         memories = self._fetch_memories(
             message=message_content,
@@ -106,7 +108,7 @@ class BaseProvider(ABC):
         return [f.get("memory", "") for f in fitted] if fitted else None
 
 
-    def _persist_message(self, role: str, content: str, model: str = "", responding_to: Message | None = None) -> Message:
+    def _persist_message(self, role: str, content: str, model: str = "", responding_to: Message | None = None, agent_config_snapshot: dict | None = None) -> Message:
         if self.conversation_id is None:
             raise ValueError("conversation_id is required to persist message")
         return Message.objects.create(
@@ -114,7 +116,8 @@ class BaseProvider(ABC):
             role=role,
             content=content,
             model=model,
-            responding_to=responding_to
+            responding_to=responding_to,
+            agent_config_snapshot=agent_config_snapshot,
         )
     
     def _get_summarised_history(self, conversation_id, last_message_when) -> tuple:
@@ -155,7 +158,8 @@ class BaseProvider(ABC):
     def _finish_response(self, assistant_reply: str) -> str:
         self.update_memory(self.message_content, assistant_reply, self.user_id)
         self.assistant_message = self._persist_message(
-            role="assistant", content=assistant_reply, model=self.MODEL, responding_to=self.message
+            role="assistant", content=assistant_reply, model=self.MODEL,
+            responding_to=self.message, agent_config_snapshot=self._config,
         )
         Memory.objects.bulk_create([
             Memory(message=self.assistant_message, conversation_id=self.conversation_id, **m)

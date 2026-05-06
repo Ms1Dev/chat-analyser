@@ -6,10 +6,17 @@ from django.template.loader import render_to_string
 from apps.relay.events import publish
 
 from .providers.anthropic import AnthropicProvider
+from .providers.openai import OpenAIProvider
+
+_PROVIDERS = {
+    'anthropic': AnthropicProvider,
+    'openai': OpenAIProvider,
+}
 
 
-def run_chat_inference(user_id: int, message: str, conversation_id: str) -> None:
-    provider = AnthropicProvider(message, conversation_id)
+def run_chat_inference(user_id: int, message: str, conversation_id: str, config: dict) -> None:
+    provider_cls = _PROVIDERS.get(config.get('provider', 'anthropic'), AnthropicProvider)
+    provider = provider_cls(message, conversation_id, config)
     for kind, chunk in provider.stream_response():
         if kind == "text":
             publish(user_id, {"type": "chat_token", "args": {"text": chunk}})
@@ -28,13 +35,13 @@ def run_chat_inference(user_id: int, message: str, conversation_id: str) -> None
     publish(user_id, {"type": "chat_done", "args": {"html": html}})
 
 
-def dispatch_chat_inference(user_id: int, message: str, conversation_id: str) -> None:
+def dispatch_chat_inference(user_id: int, message: str, conversation_id: str, config: dict) -> None:
     if getattr(settings, "CELERY_BROKER_URL", None):
         from .tasks import run_chat_inference_task
-        run_chat_inference_task.delay(user_id, message, conversation_id)
+        run_chat_inference_task.delay(user_id, message, conversation_id, config)
     else:
         threading.Thread(
             target=run_chat_inference,
-            args=(user_id, message, conversation_id),
+            args=(user_id, message, conversation_id, config),
             daemon=True,
         ).start()
