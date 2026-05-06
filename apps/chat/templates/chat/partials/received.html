@@ -1,5 +1,6 @@
 
 <div id="{{ message.id }}" class="message assistant">
+  {{ raw_prompt.id }}
   {{ message.content|linebreaks }}
     <div class="tabs tabs-box">
 
@@ -9,6 +10,22 @@
             <li><strong>Tokens:</strong> 123</li>
             <li><strong>Created at:</strong> {{ message.created_at }}</li>
             <li><strong>Model:</strong> {{ message.model }}s</li>
+          </ul>
+        </div>
+
+        
+        
+        <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="System prompt"/>
+        <div class="tab-content bg-base-100 border-base-300 p-6">
+          {{ message.system_prompt|linebreaks }}
+        </div>
+
+        <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Messages"/>
+        <div class="tab-content bg-base-100 border-base-300 p-6">
+          <ul class="list-disc pl-6">
+            {% for message in message.messages %}
+              <li>{{ message }}</li>
+            {% endfor %}
           </ul>
         </div>
 

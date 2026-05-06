@@ -93,7 +93,7 @@ def conversation_messages(request, conversation_id):
         return redirect('index')
 
     before_id = request.GET.get('before')
-    qs = convo.messages.prefetch_related('thoughts', 'tool_uses', 'memories').order_by('-id')
+    qs = convo.messages.select_related('raw_prompt').prefetch_related('thoughts', 'tool_uses', 'memories').order_by('-id')
     if before_id:
         qs = qs.filter(id__lt=before_id)
 
@@ -110,6 +110,8 @@ def conversation_messages(request, conversation_id):
             'thoughts': list(msg.thoughts.values('id', 'content', 'created_at')),
             'tool_uses': list(msg.tool_uses.values('id', 'tool_name', 'input_data', 'result', 'created_at')),
             'memories': list(msg.memories.values('id', 'memory_id', 'data')),
+            'system_prompt': getattr(msg, 'raw_prompt', None).system if hasattr(msg, 'raw_prompt') else None,
+            'messages': getattr(msg, 'raw_prompt', None).messages if hasattr(msg, 'raw_prompt') else None,
         }
         for msg in batch
     ]

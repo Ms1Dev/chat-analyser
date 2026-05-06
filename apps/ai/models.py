@@ -54,3 +54,10 @@ class ToolUse(models.Model):
     input_data = models.JSONField()
     result = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class RawPrompt(models.Model):
+    message = models.OneToOneField(Message, on_delete=models.CASCADE, related_name='raw_prompt')
+    system = models.TextField()
+    messages = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)

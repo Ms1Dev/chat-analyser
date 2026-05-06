@@ -30,6 +30,8 @@ def run_chat_inference(user_id: int, message: str, conversation_id: str, config:
         "thoughts": list(msg.thoughts.values("id", "content", "created_at")),
         "tool_uses": list(msg.tool_uses.values("id", "tool_name", "input_data", "result", "created_at")),
         "memories": list(msg.memories.values("id", "memory_id", "data")),
+        "system_prompt": getattr(msg, "raw_prompt", None).system if hasattr(msg, "raw_prompt") else None,
+        "messages": getattr(msg, "raw_prompt", None).messages if hasattr(msg, "raw_prompt") else None,
     }
     html = render_to_string("chat/partials/received.html", {"message": msg_data})
     publish(user_id, {"type": "chat_done", "args": {"html": html}})

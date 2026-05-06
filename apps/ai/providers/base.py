@@ -3,7 +3,7 @@ from typing import Generator
 
 from apps.ai import context_budget as cb
 from apps.ai.memory import memory
-from apps.ai.models import Memory, Message, Thought, ToolUse, Conversation
+from apps.ai.models import Memory, Message, Thought, ToolUse, Conversation, RawPrompt
 
 DEFAULT_SYSTEM_PROMPT = """You are a helpful assistant."""
 
@@ -173,6 +173,11 @@ class BaseProvider(ABC):
             ToolUse(message=self.assistant_message, **tu)
             for tu in self._pending_tool_uses
         ])
+        RawPrompt.objects.create(
+            message=self.assistant_message,
+            system=self.system,
+            messages=self.messages,
+        )
         return assistant_reply
 
     @abstractmethod
