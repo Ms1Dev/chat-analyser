@@ -24,7 +24,7 @@ def run_chat_inference(user_id: int, message: str, conversation_id: str) -> None
         "tool_uses": list(msg.tool_uses.values("id", "tool_name", "input_data", "result", "created_at")),
         "memories": list(msg.memories.values("id", "memory_id", "data")),
     }
-    html = render_to_string("ai/chat/partials/received.html", {"message": msg_data})
+    html = render_to_string("chat/partials/received.html", {"message": msg_data})
     publish(user_id, {"type": "chat_done", "args": {"html": html}})
 
 

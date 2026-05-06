@@ -8,7 +8,7 @@
       <div class="convos-header bg-white/80 dark:bg-gray-800/80">
         Chats
       </div>
-      {% include "ai/chat/conversation_list.html" %}
+      {% include "chat/conversation_list.html" %}
     </div>
 
     <!-- Main chat -->
@@ -18,15 +18,15 @@
         <div class="chat-messages flex flex-col-reverse overflow-y-auto flex-1" id="chat-messages">
           {% for msg in messages %}
           {% if msg.role == 'user' %}
-              {% include "ai/chat/partials/sent.html" with message_content=msg.content %}
+              {% include "chat/partials/sent.html" with message_content=msg.content %}
           {% else %}
-              {% include "ai/chat/partials/received.html" with message=msg %}
+              {% include "chat/partials/received.html" with message=msg %}
           {% endif %}
           {% endfor %}
-          {% include "ai/chat/partials/load-more-sentinel.html" %}
+          {% include "chat/partials/load-more-sentinel.html" %}
         </div>
         <div class="chat-input-row">
-            {% include "ai/chat/input.html" %}
+            {% include "chat/input.html" %}
         </div>
         {% if initial_message %}
           <div
@@ -40,7 +40,7 @@
         {% endif %}
       {% endpartialdef %}
       {% else %}
-        {% include "ai/chat/start.html" %}
+        {% include "chat/start.html" %}
       {% endif %}
     </div>
 </div>

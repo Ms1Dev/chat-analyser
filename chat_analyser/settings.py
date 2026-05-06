@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.ai',
     'apps.relay',
+    'apps.chat',
     'django_browser_reload',
 ]
 

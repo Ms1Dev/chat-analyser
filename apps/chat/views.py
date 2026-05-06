@@ -5,9 +5,9 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
 
-from .inference import dispatch_chat_inference
-from .memory import memory
-from .models import Conversation
+from apps.ai.inference import dispatch_chat_inference
+from apps.ai.memory import memory
+from apps.ai.models import Conversation
 
 
 @login_required
