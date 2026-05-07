@@ -11,4 +11,5 @@ urlpatterns = [
     path('chat/conversations/<int:conversation_id>/delete/', chat_views.conversation_delete, name='conversation-delete'),
     path('settings/', chat_views.settings, name='settings'),
     path('agents/model-options/', agent_views.model_options, name='model-options'),
+    path('message/<int:message_id>/analysis/', chat_views.analysis_modal_content, name='message-analysis'),
 ]

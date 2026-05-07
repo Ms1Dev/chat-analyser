@@ -1,3 +1,4 @@
+from email.mime import message
 import json
 import os
 from django.contrib.auth.decorators import login_required
@@ -6,12 +7,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
+from wasabi import msg
 
 from apps.agents.forms import AgentConfigForm
 from apps.agents.models import Agent
 from apps.ai.inference import dispatch_chat_inference
 from apps.ai.memory import memory
-from apps.ai.models import Conversation
+from apps.ai.models import Conversation, Message
 
 
 
@@ -83,6 +85,24 @@ def user_message(request, conversation_id):
 def conversation_list(request):
     convos = list(Conversation.objects.filter(user=request.user).values('id', 'title'))
     return JsonResponse({'conversations': convos})
+
+
+
+def analysis_modal_content(request, message_id):
+    msg = get_object_or_404(Message, id=message_id)
+    message = { 
+        'id': msg.id,
+        'role': msg.role,
+        'content': msg.content,
+        'model': msg.model,
+        'thoughts': list(msg.thoughts.values('id', 'content', 'created_at')),
+        'tool_uses': list(msg.tool_uses.values('id', 'tool_name', 'input_data', 'result', 'created_at')),
+        'memories': list(msg.memories.values('id', 'memory_id', 'data')),
+        'system_prompt': getattr(msg, 'raw_prompt', None).system if hasattr(msg, 'raw_prompt') else None,
+        'messages': getattr(msg, 'raw_prompt', None).messages if hasattr(msg, 'raw_prompt') else None,
+    }
+    return render(request, 'chat/partials/analysis_modal_content.html', {'message': message})
+
 
 
 PAGE_SIZE = 20

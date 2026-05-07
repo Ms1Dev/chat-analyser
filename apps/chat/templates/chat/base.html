@@ -49,4 +49,15 @@
 
     {% block content %}{% endblock %} {% block scripts %}{% endblock %}
   </body>
+
+  <dialog id="analysis-modal" class="modal">
+    <div class="modal-box w-11/12 max-w-5xl h-[80vh] flex flex-col">
+      <div id="analysis-modal-content" class="flex-1 min-h-0 overflow-hidden"></div>
+      <div class="modal-action mt-0">
+        <form method="dialog">
+          <button class="btn">Close</button>
+        </form>
+      </div>
+    </div>
+  </dialog>
 </html>

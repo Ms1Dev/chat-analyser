@@ -1,65 +1,13 @@
 
 <div id="{{ message.id }}" class="message assistant">
-  {{ raw_prompt.id }}
+  <button
+    class="btn btn-sm btn-ghost group-hover:opacity-100"
+    hx-get="{% url 'message-analysis' message.id %}"
+    hx-target="#analysis-modal-content"
+    hx-swap="innerHTML"
+    hx-on::after-request="document.getElementById('analysis-modal').showModal()"
+  >
+    Analyse
+  </button>
   {{ message.content|linebreaks }}
-    <div class="tabs tabs-box">
-
-      <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Info"/>
-        <div class="tab-content bg-base-100 border-base-300 p-6">
-          <ul class="list-disc pl-6">
-            <li><strong>Tokens:</strong> 123</li>
-            <li><strong>Created at:</strong> {{ message.created_at }}</li>
-            <li><strong>Model:</strong> {{ message.model }}s</li>
-          </ul>
-        </div>
-
-        
-        
-        <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="System prompt"/>
-        <div class="tab-content bg-base-100 border-base-300 p-6">
-          {{ message.system_prompt|linebreaks }}
-        </div>
-
-        <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Messages"/>
-        <div class="tab-content bg-base-100 border-base-300 p-6">
-          <ul class="list-disc pl-6">
-            {% for message in message.messages %}
-              <li>{{ message }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-
-        <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Memories"
-          {% if not message.memories %}disabled{% endif %}
-        />
-        <div class="tab-content bg-base-100 border-base-300 p-6">
-          <ul class="list-disc pl-6">
-            {% for mem in message.memories %}
-              <li>{{ mem }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-
-        <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Thoughts" 
-          {% if message.thoughts %}{% else %}disabled{% endif %}
-        />
-        <div class="tab-content bg-base-100 border-base-300 p-6">
-          <ul class="list-disc pl-6">
-            {% for thought in message.thoughts %}
-              <li>{{ thought }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-
-        <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Tool use" 
-          {% if message.tool_uses %}{% else %}disabled{% endif %}
-        />
-        <div class="tab-content bg-base-100 border-base-300 p-6">
-          <ul class="list-disc pl-6">
-            {% for tool_use in message.tool_uses %}
-              <li>{{ tool_use }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-    </div>
 </div>
