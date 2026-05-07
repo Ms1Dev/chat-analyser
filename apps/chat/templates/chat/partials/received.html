@@ -1,7 +1,7 @@
-
+{% load markdown %}
 <div id="{{ message.id }}" class="chat chat-start group">
-  <div class="chat-bubble chat-bubble-secondary">
-    {{ message.content|linebreaks }}
+  <div class="chat-bubble bg-base-200 text-base-content prose max-w-none">
+    {{ message.content|render_markdown }}
   </div>
   <div class="chat-footer opacity-0 group-hover:opacity-100 transition-opacity duration-150 mt-1">
     <button
