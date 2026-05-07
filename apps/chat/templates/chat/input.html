@@ -4,9 +4,27 @@
   {% if conversation_id %}hx-post="{% url 'user-message' conversation_id %}"{% endif %}
   hx-target="#chat-input"
   hx-swap="outerHTML"
+  class="w-full"
 >
-  <div class="flex gap-2">
-    <input type="text" name="message" autocomplete="off" class="input input-bordered flex-1" />
-    <button type="submit" class="btn btn-primary" {% if not conversation_id or disabled %}disabled{% endif %}>Send</button>
+  <div class="relative">
+    <textarea
+      name="message"
+      autocomplete="off"
+      placeholder="Message..."
+      rows="1"
+      class="textarea textarea-bordered w-full pr-14 py-4 text-base rounded-2xl resize-none overflow-hidden leading-relaxed"
+      oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.requestSubmit()}"
+      {% if not conversation_id or disabled %}disabled{% endif %}
+    ></textarea>
+    <button
+      type="submit"
+      class="btn btn-primary btn-sm absolute right-3 bottom-3 rounded-xl"
+      {% if not conversation_id or disabled %}disabled{% endif %}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
+        <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/>
+      </svg>
+    </button>
   </div>
 </form>

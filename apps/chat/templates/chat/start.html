@@ -1,14 +1,37 @@
-<div class="card">
-    <form
+<div class="flex flex-col items-center justify-center h-full gap-10 px-4">
+
+  <div class="text-center space-y-2">
+    <h1 class="text-4xl font-semibold tracking-tight">What can I help with?</h1>
+    <p class="text-base-content/50 text-sm">Start a conversation</p>
+  </div>
+
+  <form
     id="chat-input"
-    class="border-t border-base-300 px-4 py-4"
+    class="w-full max-w-2xl"
     hx-post="{% url 'chat-start' %}"
     hx-target="#chat-main"
     hx-swap="innerHTML"
-    >
-    <div class="flex gap-2">
-        <input type="text" name="message" autocomplete="off" class="input input-bordered flex-1" />
-        <button type="submit" class="btn btn-primary">Send</button>
+  >
+    <div class="relative">
+      <textarea
+        name="message"
+        autocomplete="off"
+        placeholder="Message..."
+        rows="1"
+        class="textarea textarea-bordered w-full pr-14 py-4 text-base rounded-2xl resize-none overflow-hidden leading-relaxed"
+        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.requestSubmit()}"
+      ></textarea>
+      <button
+        type="submit"
+        class="btn btn-primary btn-sm absolute right-3 bottom-3 rounded-xl"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
+          <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/>
+        </svg>
+      </button>
     </div>
-    </form>
+    <p class="text-center text-xs text-base-content/30 mt-3">Enter to send &middot; Shift+Enter for new line</p>
+  </form>
+
 </div>
