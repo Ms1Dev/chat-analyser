@@ -8,6 +8,7 @@ class Agent(models.Model):
     system_prompt = models.TextField(blank=True, default="")
     provider = models.CharField(max_length=255, blank=True, default="openai")
     model = models.CharField(max_length=255, blank=True, default="gpt-4o-mini")
+    model_data = models.JSONField(blank=True, default=dict)
     chat_history_fraction = models.FloatField(default=0.4)
     summarised_history_fraction = models.FloatField(default=0.2)
     relevant_chat_history_fraction = models.FloatField(default=0.1)
@@ -29,3 +30,4 @@ class Agent(models.Model):
 
     def __str__(self):
         return self.name
+    

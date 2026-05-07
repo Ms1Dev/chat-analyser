@@ -11,7 +11,7 @@
     <div class="card bg-base-200 shadow-sm mb-6">
       <div class="card-body gap-4">
         <h3 class="card-title text-base">Agent</h3>
-        
+
         <div class="form-control">
           <label class="label"><span class="label-text">System Prompt</span></label>
           <textarea name="system_prompt" class="textarea textarea-bordered" rows="6">{{ form.system_prompt.value }}</textarea>
@@ -20,15 +20,28 @@
         <div class="grid grid-cols-2 gap-4">
           <div class="form-control">
             <label class="label"><span class="label-text">Provider</span></label>
-            <select name="provider" class="select select-bordered">
-              <option value="anthropic" {% if form.provider.value == "anthropic" %}selected{% endif %}>Anthropic</option>
-              <option value="openai" {% if form.provider.value == "openai" %}selected{% endif %}>OpenAI</option>
+            <select name="provider_choice" id="id_provider_choice"
+                    class="select select-bordered w-full"
+                    hx-get="{% url 'model-options' %}"
+                    hx-target="#id_model_choice"
+                    hx-trigger="change"
+                    hx-swap="innerHTML"
+                    hx-include="this">
+              {% for value, label in form.provider_choice.field.choices %}
+                <option value="{{ value }}" {% if value == form.provider_choice.value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
             </select>
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text">Model</span></label>
-            <input type="text" name="model" value="{{ form.model.value }}" class="input input-bordered">
+            <select name="model_choice" id="id_model_choice" class="select select-bordered w-full">
+              {% for model in current_provider_models %}
+                <option value="{{ model.model_id }}" {% if model.model_id == current_model %}selected{% endif %}>
+                  {{ model.name }}
+                </option>
+              {% endfor %}
+            </select>
           </div>
         </div>
       </div>

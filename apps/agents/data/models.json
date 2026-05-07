@@ -1,0 +1,153 @@
+{
+  "anthropic": {
+    "provider": "Anthropic",
+    "models": [
+      {
+        "name": "Claude Opus 4.7",
+        "model_id": "claude-opus-4-7",
+        "tier": "flagship",
+        "description": "Most capable model for complex reasoning and agentic coding",
+        "context_window_tokens": 1000000,
+        "max_output_tokens": 128000,
+        "pricing": {
+          "input_per_1m": 5.00,
+          "output_per_1m": 25.00,
+          "cache_write_per_1m": 6.25,
+          "cache_read_per_1m": 0.50,
+          "batch_input_per_1m": 2.50,
+          "batch_output_per_1m": 12.50
+        },
+        "knowledge_cutoff": "2026-01",
+        "notes": "New tokenizer vs Opus 4.6 — may use up to 35% more tokens for the same input text"
+      },
+      {
+        "name": "Claude Opus 4.6",
+        "model_id": "claude-opus-4-6",
+        "tier": "flagship",
+        "description": "Previous flagship — strong reasoning, 1M context at flat rate",
+        "context_window_tokens": 1000000,
+        "max_output_tokens": 128000,
+        "pricing": {
+          "input_per_1m": 5.00,
+          "output_per_1m": 25.00,
+          "cache_write_per_1m": 6.25,
+          "cache_read_per_1m": 0.50,
+          "batch_input_per_1m": 2.50,
+          "batch_output_per_1m": 12.50
+        },
+        "knowledge_cutoff": "2026-01",
+        "notes": "1M token context at standard pricing, no surcharge"
+      },
+      {
+        "name": "Claude Sonnet 4.6",
+        "model_id": "claude-sonnet-4-6",
+        "tier": "balanced",
+        "description": "Best combination of speed and intelligence — recommended default",
+        "context_window_tokens": 1000000,
+        "max_output_tokens": 64000,
+        "pricing": {
+          "input_per_1m": 3.00,
+          "output_per_1m": 15.00,
+          "cache_write_per_1m": 3.75,
+          "cache_read_per_1m": 0.30,
+          "batch_input_per_1m": 1.50,
+          "batch_output_per_1m": 7.50
+        },
+        "knowledge_cutoff": "2025-08",
+        "notes": "1M token context at standard pricing, no surcharge"
+      },
+      {
+        "name": "Claude Haiku 4.5",
+        "model_id": "claude-haiku-4-5-20251001",
+        "model_alias": "claude-haiku-4-5",
+        "tier": "fast",
+        "description": "Fastest model with near-frontier intelligence — best for high-volume tasks",
+        "context_window_tokens": 200000,
+        "max_output_tokens": 64000,
+        "pricing": {
+          "input_per_1m": 1.00,
+          "output_per_1m": 5.00,
+          "cache_write_per_1m": 1.25,
+          "cache_read_per_1m": 0.10,
+          "batch_input_per_1m": 0.50,
+          "batch_output_per_1m": 2.50
+        },
+        "knowledge_cutoff": "2025-02",
+        "notes": "200K context window, no long-context surcharge"
+      }
+    ]
+  },
+  "openai": {
+    "provider": "OpenAI",
+    "models": [
+      {
+        "name": "GPT-5.5",
+        "model_id": "gpt-5.5",
+        "tier": "flagship",
+        "description": "Most capable model for complex tasks",
+        "context_window_tokens": 1050000,
+        "max_output_tokens": 128000,
+        "pricing": {
+          "input_per_1m": 10.00,
+          "output_per_1m": 30.00,
+          "cached_input_per_1m": null,
+          "batch_input_per_1m": 5.00,
+          "batch_output_per_1m": 15.00
+        },
+        "knowledge_cutoff": "2025-12",
+        "notes": "Prompts >272K tokens billed at 2x input / 1.5x output for full session"
+      },
+      {
+        "name": "GPT-5.4",
+        "model_id": "gpt-5.4",
+        "tier": "balanced",
+        "description": "Affordable model for coding and professional work",
+        "context_window_tokens": 1050000,
+        "max_output_tokens": 128000,
+        "pricing": {
+          "input_per_1m": 2.50,
+          "output_per_1m": 15.00,
+          "cached_input_per_1m": null,
+          "batch_input_per_1m": 1.25,
+          "batch_output_per_1m": 7.50
+        },
+        "knowledge_cutoff": "2025-08",
+        "notes": "Prompts >272K tokens billed at 2x input / 1.5x output for full session"
+      },
+      {
+        "name": "GPT-5.4 mini",
+        "model_id": "gpt-5.4-mini",
+        "tier": "fast",
+        "description": "Strongest mini model for coding, computer use, and subagents",
+        "context_window_tokens": 400000,
+        "max_output_tokens": 128000,
+        "pricing": {
+          "input_per_1m": 0.75,
+          "output_per_1m": 4.50,
+          "cached_input_per_1m": 0.075,
+          "batch_input_per_1m": 0.375,
+          "batch_output_per_1m": 2.25
+        },
+        "knowledge_cutoff": "2025-08",
+        "notes": "10% uplift for regional processing endpoints"
+      },
+      {
+        "name": "GPT-5.4 nano",
+        "model_id": "gpt-5.4-nano",
+        "tier": "economy",
+        "description": "Smallest and most affordable model in the GPT-5.4 family",
+        "context_window_tokens": 400000,
+        "max_output_tokens": 128000,
+        "pricing": {
+          "input_per_1m": 0.20,
+          "output_per_1m": 1.20,
+          "cached_input_per_1m": null,
+          "batch_input_per_1m": 0.10,
+          "batch_output_per_1m": 0.60
+        },
+        "knowledge_cutoff": "2025-08",
+        "notes": null
+      }
+    ]
+  }
+}

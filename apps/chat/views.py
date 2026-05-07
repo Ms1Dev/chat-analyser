@@ -1,3 +1,5 @@
+import json
+import os
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -5,11 +7,12 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
 
-from apps.agents.forms import AgentForm
+from apps.agents.forms import AgentConfigForm
 from apps.agents.models import Agent
 from apps.ai.inference import dispatch_chat_inference
 from apps.ai.memory import memory
 from apps.ai.models import Conversation
+
 
 
 
@@ -146,15 +149,31 @@ def settings(request):
         agent = Agent.objects.create(user=request.user, name='My Agent')
 
     if request.method == 'POST':
-        form = AgentForm(request.POST, instance=agent)
+        form = AgentConfigForm(request.POST, instance=agent)
         if form.is_valid():
             form.save()
             if request.headers.get('HX-Request'):
                 return HttpResponse('<div id="settings-saved" class="alert alert-success">Saved</div>')
     else:
-        form = AgentForm(instance=agent)
+        form = AgentConfigForm(instance=agent)
 
-    ctx = {'form': form}
+    data_path = os.path.join(os.path.dirname(__file__), '..', 'agents', 'data', 'models.json')
+    with open(os.path.normpath(data_path)) as f:
+        models_data = json.load(f)
+
+    provider_key = (
+        request.POST.get('provider_choice') if request.method == 'POST' else None
+    ) or agent.provider or next(iter(models_data))
+    current_provider_models = models_data.get(provider_key, {}).get('models', [])
+    current_model = (
+        request.POST.get('model_choice') if request.method == 'POST' else None
+    ) or agent.model
+
+    ctx = {
+        'form': form,
+        'current_provider_models': current_provider_models,
+        'current_model': current_model,
+    }
     if request.headers.get('HX-Request'):
         return render(request, 'chat/settings.html', ctx)
     conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
