@@ -99,7 +99,7 @@ class AnthropicProviderTextTest(TestCase):
             mock_mem.search.return_value = {"results": []}
             mock_mem.add.return_value = None
             _, convo = make_user_and_conversation()
-            provider = AnthropicProvider("hello", conversation_id=convo.id)
+            provider = AnthropicProvider("hello", conversation_id=convo.id, config={})
             provider._mock_mem = mock_mem
         return provider
 
@@ -154,7 +154,8 @@ class AnthropicProviderTextTest(TestCase):
             ([text_event("done")], "end_turn", []),
         ])
         provider = self._make_provider(client)
-        with patch("apps.ai.providers.base.memory") as mock_mem:
+        with patch("apps.ai.providers.base.memory") as mock_mem, \
+             patch("apps.ai.providers.base.RawPrompt"):
             mock_mem.add.return_value = None
             list(provider.stream_response())
         self.assertEqual(ToolUse.objects.count(), 1)
@@ -171,7 +172,8 @@ class AnthropicProviderTextTest(TestCase):
             ([text_event("done")], "end_turn", []),
         ])
         provider = self._make_provider(client)
-        with patch("apps.ai.providers.base.memory") as mock_mem:
+        with patch("apps.ai.providers.base.memory") as mock_mem, \
+             patch("apps.ai.providers.base.RawPrompt"):
             mock_mem.add.return_value = None
             list(provider.stream_response())
         # Two calls means the tool result was fed back
@@ -202,7 +204,7 @@ class AnthropicProviderTextTest(TestCase):
         with patch("apps.ai.providers.anthropic.anthropic.Anthropic"), \
              patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": []}
-            provider = AnthropicProvider("hi", conversation_id=convo.id)
+            provider = AnthropicProvider("hi", conversation_id=convo.id, config={})
         tools = [{"name": "foo", "description": "bar", "parameters": {"type": "object"}}]
         result = provider._get_tools(tools)
         self.assertIn("input_schema", result[0])
@@ -286,7 +288,7 @@ class OpenAIProviderTextTest(TestCase):
             mock_mem.search.return_value = {"results": []}
             mock_mem.add.return_value = None
             _, convo = make_user_and_conversation()
-            provider = OpenAIProvider("hello", conversation_id=convo.id)
+            provider = OpenAIProvider("hello", conversation_id=convo.id, config={})
         return provider
 
     def test_yields_text_chunks(self):
@@ -359,7 +361,7 @@ class OpenAIProviderTextTest(TestCase):
         with patch("apps.ai.providers.openai.OpenAI"), \
              patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": []}
-            provider = OpenAIProvider("hi", conversation_id=convo.id)
+            provider = OpenAIProvider("hi", conversation_id=convo.id, config={})
         tools = [{"name": "foo", "description": "bar", "parameters": {"type": "object"}}]
         result = provider._get_tools(tools)
         self.assertEqual(result[0]["type"], "function")
@@ -377,7 +379,7 @@ class BaseProviderTest(TestCase):
              patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": []}
             _, convo = make_user_and_conversation()
-            provider = AnthropicProvider("hello", conversation_id=convo.id)
+            provider = AnthropicProvider("hello", conversation_id=convo.id, config={})
         return provider
 
     def test_persists_user_message_on_init(self):
@@ -385,7 +387,7 @@ class BaseProviderTest(TestCase):
         with patch("apps.ai.providers.anthropic.anthropic.Anthropic"), \
              patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": []}
-            AnthropicProvider("test message", conversation_id=convo.id)
+            AnthropicProvider("test message", conversation_id=convo.id, config={})
         msg = Message.objects.filter(role="user").first()
         self.assertIsNotNone(msg)
         self.assertEqual(msg.content, "test message")
@@ -403,14 +405,17 @@ class BaseProviderTest(TestCase):
         import uuid
         _, convo = make_user_and_conversation()
         mem_id = str(uuid.uuid4())
-        with patch("apps.ai.providers.anthropic.anthropic.Anthropic"), \
+        client = make_anthropic_client([([text_event("hi")], "end_turn", [])])
+        with patch("apps.ai.providers.anthropic.anthropic.Anthropic", return_value=client), \
              patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": [
                 {"id": mem_id, "memory": "user likes Python", "hash": "abc", "score": 1.0}
             ]}
-            provider = AnthropicProvider("hello", conversation_id=convo.id)
+            mock_mem.add.return_value = None
+            provider = AnthropicProvider("hello", conversation_id=convo.id, config={})
+            list(provider.stream_response())
         from apps.ai.models import Memory
-        self.assertEqual(Memory.objects.filter(message=provider.message).count(), 1)
+        self.assertEqual(Memory.objects.filter(message=provider.assistant_message).count(), 1)
 
     def test_system_prompt_includes_memory_context(self):
         import uuid
@@ -420,7 +425,7 @@ class BaseProviderTest(TestCase):
             mock_mem.search.return_value = {"results": [
                 {"id": str(uuid.uuid4()), "memory": "user likes Python", "hash": "x", "score": 1.0}
             ]}
-            provider = AnthropicProvider("hello", conversation_id=convo.id)
+            provider = AnthropicProvider("hello", conversation_id=convo.id, config={})
         self.assertIn("user likes Python", provider.system)
 
 
@@ -509,7 +514,7 @@ class FetchMemoriesTest(TestCase):
              patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": []}
             _, convo = make_user_and_conversation()
-            provider = AnthropicProvider("hello", conversation_id=convo.id)
+            provider = AnthropicProvider("hello", conversation_id=convo.id, config={})
         return provider
 
     def _mem(self, text, score=1.0, mem_id=None, metadata=None):
@@ -523,10 +528,7 @@ class FetchMemoriesTest(TestCase):
         provider = self._make_provider()
         with patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": [self._mem("user likes cats")]}
-            result = provider._fetch_memories(
-                message="test", user_id=provider.user_id,
-                message_id=provider.message.id, budget=10_000,
-            )
+            result = provider._fetch_memories(message="test", budget=10_000)
         self.assertIsNotNone(result)
         self.assertIn("user likes cats", result)
 
@@ -534,42 +536,32 @@ class FetchMemoriesTest(TestCase):
         provider = self._make_provider()
         with patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": [self._mem("low score memory", score=0.1)]}
-            result = provider._fetch_memories(
-                message="test", user_id=provider.user_id,
-                message_id=provider.message.id, budget=10_000,
-            )
+            result = provider._fetch_memories(message="test", budget=10_000)
         self.assertIsNone(result)
 
     def test_returns_none_when_empty_results(self):
         provider = self._make_provider()
         with patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": []}
-            result = provider._fetch_memories(
-                message="test", user_id=provider.user_id,
-                message_id=provider.message.id, budget=10_000,
-            )
+            result = provider._fetch_memories(message="test", budget=10_000)
         self.assertIsNone(result)
 
     def test_creates_memory_db_records_for_matched_results(self):
-        from apps.ai.models import Memory as MemoryModel
         provider = self._make_provider()
+        before = len(provider._pending_memories)
         with patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": [
                 self._mem("first memory"), self._mem("second memory"),
             ]}
-            provider._fetch_memories(
-                message="test", user_id=provider.user_id,
-                message_id=provider.message.id, budget=10_000,
-            )
-        self.assertEqual(MemoryModel.objects.filter(message=provider.message).count(), 2)
+            provider._fetch_memories(message="test", budget=10_000)
+        self.assertEqual(len(provider._pending_memories) - before, 2)
 
     def test_exclude_conversation_passes_ne_filter(self):
         provider = self._make_provider()
         with patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": []}
             provider._fetch_memories(
-                message="test", user_id=provider.user_id,
-                message_id=provider.message.id, budget=10_000,
+                message="test", budget=10_000,
                 exclude_conversation=True,
             )
         filters = mock_mem.search.call_args.kwargs["filters"]
@@ -580,8 +572,7 @@ class FetchMemoriesTest(TestCase):
         with patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": []}
             provider._fetch_memories(
-                message="test", user_id=provider.user_id,
-                message_id=provider.message.id, budget=10_000,
+                message="test", budget=10_000,
                 exclude_conversation=False,
             )
         filters = mock_mem.search.call_args.kwargs["filters"]
@@ -594,10 +585,7 @@ class FetchMemoriesTest(TestCase):
             mock_mem.search.return_value = {"results": [
                 self._mem("hello"), self._mem("world"),
             ]}
-            result = provider._fetch_memories(
-                message="test", user_id=provider.user_id,
-                message_id=provider.message.id, budget=1,
-            )
+            result = provider._fetch_memories(message="test", budget=1)
         self.assertEqual(len(result), 1)
 
 
@@ -610,8 +598,9 @@ class GetSummarisedHistoryTest(TestCase):
         with patch("apps.ai.providers.anthropic.anthropic.Anthropic"), \
              patch("apps.ai.providers.base.memory") as mock_mem:
             mock_mem.search.return_value = {"results": []}
+            mock_mem.get_all.return_value = {"results": []}
             _, convo = make_user_and_conversation()
-            provider = AnthropicProvider("hello", conversation_id=convo.id)
+            provider = AnthropicProvider("hello", conversation_id=convo.id, config={})
         return provider
 
     def _mem(self, text, created_at, mem_id=None):
@@ -623,10 +612,10 @@ class GetSummarisedHistoryTest(TestCase):
         provider = self._make_provider()
         cutoff = datetime(2024, 1, 10, 12, 0, tzinfo=timezone.utc)
         with patch("apps.ai.providers.base.memory") as mock_mem:
-            mock_mem.get_all.return_value = [
+            mock_mem.get_all.return_value = {"results": [
                 self._mem("before cutoff", "2024-01-09T10:00:00+00:00"),
                 self._mem("after cutoff",  "2024-01-11T10:00:00+00:00"),
-            ]
+            ]}
             history, _ = provider._get_summarised_history(provider.conversation_id, cutoff)
         self.assertIn("before cutoff", history)
         self.assertNotIn("after cutoff", history)
@@ -636,10 +625,10 @@ class GetSummarisedHistoryTest(TestCase):
         provider = self._make_provider()
         cutoff = datetime(2024, 1, 20, tzinfo=timezone.utc)
         with patch("apps.ai.providers.base.memory") as mock_mem:
-            mock_mem.get_all.return_value = [
+            mock_mem.get_all.return_value = {"results": [
                 self._mem("second", "2024-01-10T00:00:00+00:00"),
                 self._mem("first",  "2024-01-05T00:00:00+00:00"),
-            ]
+            ]}
             history, _ = provider._get_summarised_history(provider.conversation_id, cutoff)
         self.assertEqual(history, ["first", "second"])
 
@@ -648,7 +637,7 @@ class GetSummarisedHistoryTest(TestCase):
         provider = self._make_provider()
         cutoff = datetime(2024, 1, 20, tzinfo=timezone.utc)
         with patch("apps.ai.providers.base.memory") as mock_mem:
-            mock_mem.get_all.return_value = []
+            mock_mem.get_all.return_value = {"results": []}
             provider._get_summarised_history(provider.conversation_id, cutoff)
         filters = mock_mem.get_all.call_args.kwargs["filters"]
         self.assertEqual(filters.get("conversation_id"), str(provider.conversation_id))
@@ -658,7 +647,7 @@ class GetSummarisedHistoryTest(TestCase):
         provider = self._make_provider()
         cutoff = datetime(2024, 1, 20, tzinfo=timezone.utc)
         with patch("apps.ai.providers.base.memory") as mock_mem:
-            mock_mem.get_all.return_value = []
+            mock_mem.get_all.return_value = {"results": []}
             history, last_when = provider._get_summarised_history(provider.conversation_id, cutoff)
         self.assertEqual(history, [])
         self.assertIsNone(last_when)

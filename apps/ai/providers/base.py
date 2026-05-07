@@ -5,7 +5,6 @@ from apps.ai import context_budget as cb
 from apps.ai.memory import memory
 from apps.ai.models import Memory, Message, Thought, ToolUse, Conversation, RawPrompt
 
-DEFAULT_SYSTEM_PROMPT = """You are a helpful assistant."""
 
 
 class BaseProvider(ABC):
@@ -25,19 +24,19 @@ class BaseProvider(ABC):
         self.user_id = "user_" + str(self.conversation.user_id if self.conversation else None)
         self.message = self._persist_message(role="user", content=message_content)
         self.message_content = message_content
-        self.system = config.get('system_prompt') or DEFAULT_SYSTEM_PROMPT
+        self.system = config.get('system_prompt') or ""
         self._pending_memories: list[dict] = []
         self._pending_thoughts: list[str] = []
         self._pending_tool_uses: list[dict] = []
 
         system_tokens = cb.count_tokens(self.system)
         effective = cb.available_tokens(self.MODEL, system_tokens)
-        self.history_budget = int(effective * config.get('chat_history_fraction', cb.CHAT_HISTORY_FRACTION))
-        self.summarised_history_budget = int(effective * config.get('summarised_history_fraction', cb.SUMMARISED_HISTORY_FRACTION))
-        relevant_history_budget = int(effective * config.get('relevant_chat_history_fraction', cb.RELEVANT_CHAT_HISTORY_FRACTION))
-
+        self.history_budget = int(effective * config.get('chat_history_fraction', config.get('chat_history_fraction', cb.CHAT_HISTORY_FRACTION)))
+        self.summarised_history_budget = int(effective * config.get('summarised_history_fraction', config.get('summarised_history_fraction', cb.SUMMARISED_HISTORY_FRACTION)))
+        relevant_history_budget = int(effective * config.get('relevant_chat_history_fraction', config.get('relevant_chat_history_fraction', cb.RELEVANT_CHAT_HISTORY_FRACTION)))
+    
         # relevant memories from other conversations
-        memory_budget = int(effective * config.get('memory_fraction', cb.MEMORY_FRACTION))
+        memory_budget = int(effective * config.get('memory_fraction', config.get('memory_fraction', cb.MEMORY_FRACTION)))
 
         memories = self._fetch_memories(
             message=message_content,
@@ -122,7 +121,7 @@ class BaseProvider(ABC):
     
     def _get_summarised_history(self, conversation_id, last_message_when) -> tuple:
         cutoff = last_message_when.isoformat() if hasattr(last_message_when, "isoformat") else last_message_when
-        results = memory.get_all(filters={"conversation_id": str(conversation_id)}, top_k=100)
+        results = memory.get_all(filters={"user_id": self.user_id, "conversation_id": str(conversation_id)}, top_k=100).get("results", [])
         results = [r for r in results if r.get("created_at", "") < cutoff]
         results.sort(key=lambda r: r.get("created_at", ""), reverse=True)
         fitted, last_memory_when = cb.fit_memories(results, self.summarised_history_budget)
