@@ -1,7 +1,7 @@
 <div class="h-full flex flex-col">
     <div class="tabs tabs-box flex-1 min-h-0">
 
-      <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Info"/>
+      <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Info" checked="checked"/>
         <div class="tab-content bg-base-100 border-base-300 p-6 overflow-y-auto">
           <ul class="list-disc pl-6">
             <li><strong>Tokens:</strong> 123</li>
@@ -17,9 +17,9 @@
 
         <input type="radio" name="my_tabs_{{ message.id }}" class="tab" aria-label="Messages"/>
         <div class="tab-content bg-base-100 border-base-300 p-6 overflow-y-auto">
-          <ul class="list-disc pl-6">
+          <ul class="list bg-base-100 rounded-box shadow-md">
             {% for message in message.messages %}
-              <li>{{ message }}</li>
+              {% include 'chat/partials/analysis_list_item.html' with title=message.role|capfirst content=message.content %}
             {% endfor %}
           </ul>
         </div>
@@ -28,9 +28,9 @@
           {% if not message.memories %}disabled{% endif %}
         />
         <div class="tab-content bg-base-100 border-base-300 p-6 overflow-y-auto">
-          <ul class="list-disc pl-6">
+          <ul class="list bg-base-100 rounded-box shadow-md">
             {% for mem in message.memories %}
-              <li>{{ mem }}</li>
+              {% include 'chat/partials/analysis_list_item.html' with title=mem.data.created_at content=mem.data.memory %}
             {% endfor %}
           </ul>
         </div>
@@ -39,9 +39,9 @@
           {% if message.thoughts %}{% else %}disabled{% endif %}
         />
         <div class="tab-content bg-base-100 border-base-300 p-6 overflow-y-auto">
-          <ul class="list-disc pl-6">
+          <ul class="list bg-base-100 rounded-box shadow-md">
             {% for thought in message.thoughts %}
-              <li>{{ thought }}</li>
+              {% include 'chat/partials/analysis_list_item.html' with title=thought.created_at content=thought.content %}
             {% endfor %}
           </ul>
         </div>
@@ -50,9 +50,9 @@
           {% if message.tool_uses %}{% else %}disabled{% endif %}
         />
         <div class="tab-content bg-base-100 border-base-300 p-6 overflow-y-auto">
-          <ul class="list-disc pl-6">
+          <ul class="list bg-base-100 rounded-box shadow-md">
             {% for tool_use in message.tool_uses %}
-              <li>{{ tool_use }}</li>
+              {% include 'chat/partials/analysis_list_item.html' with title=tool_use.created_at content=tool_use %}
             {% endfor %}
           </ul>
         </div>

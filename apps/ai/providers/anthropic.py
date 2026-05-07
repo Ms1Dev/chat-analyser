@@ -71,7 +71,7 @@ class AnthropicProvider(BaseProvider):
                 break
 
             tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
-            self.messages.append({"role": "assistant", "content": response.content})
+            self.messages.append({"role": "assistant", "content": [b.model_dump() for b in response.content]})
             for block in tool_use_blocks:
                 self._call_tool(self.messages, block, self.message.id)
 
