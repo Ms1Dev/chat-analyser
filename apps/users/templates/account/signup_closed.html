@@ -1,0 +1,20 @@
+{% extends "account/base_entrance.html" %}
+{% load i18n %}
+{% load allauth %}
+{% block head_title %}
+    {% trans "Sign Up Closed" %}
+{% endblock head_title %}
+{% block content %}
+    
+    <c-layout.stack justify="center">
+        <c-header.large>{% trans "Sign Up Closed" %}</c-header.large>
+        <c-layout.spacer.small/>
+        <c-text.small>
+            {% trans "We are sorry, but the sign up is currently closed." %}
+        </c-text.small>
+        <c-layout.spacer.small/>
+        <c-text.small>
+            <c-link href="{% url 'account_login' %}" colour="base-content">← {% trans "Back to login" %}</c-link>
+        </c-text.small>
+    </c-layout.stack>
+{% endblock content %}

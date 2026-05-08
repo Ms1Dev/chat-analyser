@@ -1,0 +1,17 @@
+{% load socialaccount %}
+{% get_providers as socialaccount_providers %}
+{% if socialaccount_providers %}
+  <div class="flex flex-col gap-4">
+    
+    
+    
+        {% if signup %}
+          <c-button.google href="{% url 'users:start_google_signup' %}?invite_token={{ request.GET.invite_token }}"/>
+        {% else %}
+          <c-button.google href="{% url 'users:start_google_login' %}?invite_token={{ request.GET.invite_token }}"/>
+        {% endif %}
+    
+    
+    
+  </div>
+{% endif %}

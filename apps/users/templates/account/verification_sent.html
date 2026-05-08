@@ -1,0 +1,31 @@
+{% extends "account/base_entrance.html" %}
+{% load i18n %}
+{% load allauth %}
+
+{% block head_title %}
+  {% trans "Verify Your Email Address" %}
+{% endblock head_title %}
+
+{% block content %}
+  <c-layout.stack justify="center">
+    <c-header.large>
+      {% trans "Verify Your Email Address" %}
+    </c-header.large>
+    <c-layout.spacer.small/>
+    <c-text.small justify="center">
+      {% blocktrans %}
+        We've sent you a verification link. Check your email (and spam folder) to complete your signup.
+        Contact us if it doesn’t show up soon.
+      {% endblocktrans %}
+    </c-text.small>
+    
+    <c-layout.spacer.small/>
+    <c-text.small justify="center">
+      <c-link href="{% url 'account_login' %}" colour="base-content">← {% trans "Back to login" %}</c-link>
+    </c-text.small>
+    <c-layout.spacer.small/>
+    <c-text.xs justify="center">
+      {% trans "Please contact us if you have any trouble verifying your email." %}
+    </c-text.xs>
+  </c-layout.stack>
+{% endblock content %}

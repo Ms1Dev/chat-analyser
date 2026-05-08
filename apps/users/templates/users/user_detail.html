@@ -1,0 +1,10 @@
+{% load i18n %}
+
+<c-container>
+      <c-slot name="title">
+        {% trans "Update User" %}
+      </c-slot>
+      <c-form action="{% url 'users:account_settings' component='details2' %}" method="post">
+          <c-button.filled type="submit">{% trans "Update" %}</c-button.filled>
+      </c-form>
+</c-container>

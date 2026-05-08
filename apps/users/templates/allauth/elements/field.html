@@ -1,0 +1,64 @@
+{% load allauth %}
+{% load crispy_forms_tags %}
+
+{% if attrs.type == "textarea" %}
+  <div class="mb-4">
+    <label for="{{ attrs.id }}" class="block text-sm font-medium text-gray-700 mb-1">
+      {% slot label %}{% endslot %}
+    </label>
+    <textarea
+      class="block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+      {% if attrs.required %}required{% endif %}
+      {% if attrs.rows %}rows="{{ attrs.rows }}"{% endif %}
+      {% if attrs.disabled %}disabled{% endif %}
+      {% if attrs.readonly %}readonly{% endif %}
+      {% if attrs.checked %}checked{% endif %}
+      {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
+      {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
+      {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}>
+      {% slot value %}{% endslot %}
+    </textarea>
+  </div>
+
+{% elif attrs.type == "radio" %}
+  <div class="mb-4 flex items-center">
+    <input
+      class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+      type="{{ attrs.type }}"
+      value="{{ attrs.value|default_if_none:"" }}"
+      {% if attrs.required %}required{% endif %}
+      {% if attrs.disabled %}disabled{% endif %}
+      {% if attrs.readonly %}readonly{% endif %}
+      {% if attrs.checked %}checked{% endif %}
+      {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
+      {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
+      {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
+      {% if attrs.autocomplete %}autocomplete="{{ attrs.autocomplete }}"{% endif %}>
+    <label for="{{ attrs.id }}" class="ml-2 block text-sm text-gray-700">
+      {% slot label %}{% endslot %}
+    </label>
+  </div>
+
+{% else %}
+  <div class="mb-4">
+    <label for="{{ attrs.id }}" class="block text-sm font-medium text-gray-700 mb-1">
+      {% slot label %}{% endslot %}
+    </label>
+    <input
+      type="{{ attrs.type }}"
+      value="{{ attrs.value|default_if_none:"" }}"
+      class="block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+      {% if attrs.required %}required{% endif %}
+      {% if attrs.disabled %}disabled{% endif %}
+      {% if attrs.readonly %}readonly{% endif %}
+      {% if attrs.checked %}checked{% endif %}
+      {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
+      {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
+      {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
+      {% if attrs.autocomplete %}autocomplete="{{ attrs.autocomplete }}"{% endif %}>
+  </div>
+{% endif %}
+
+{% if slots.help_text %}
+  <p class="text-xs text-gray-500 mt-1">{% slot help_text %}{% endslot %}</p>
+{% endif %}

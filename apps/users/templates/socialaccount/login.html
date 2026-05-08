@@ -1,0 +1,48 @@
+{% extends "socialaccount/base_entrance.html" %}
+{% load i18n %}
+{% load allauth %}
+{% block head_title %}
+    {% trans "Sign In" %}
+{% endblock head_title %}
+{% block content %}
+
+<c-layout.stack justify="center">
+  
+  {% if process == "connect" %}
+    <c-header.large>
+      {% blocktrans with provider.name as provider %}Connect your {{ provider }} account{% endblocktrans %}
+    </c-header.large>
+    <c-layout.spacer.small/>
+    <c-text.small>
+      {% blocktrans with provider.name as provider %}
+        You're about to connect a new third-party account from {{ provider }} to your profile.
+      {% endblocktrans %}
+    </c-text.small>
+  {% else %}
+    <c-header.large>
+      {% blocktrans with provider.name as provider %}Sign In with {{ provider }}{% endblocktrans %}
+    </c-header.large>
+    <c-layout.spacer.small/>
+    <c-text.small>
+      {% blocktrans with provider.name as provider %}
+        You're about to sign in using your {{ provider }} account.
+      {% endblocktrans %}
+    </c-text.small>
+  {% endif %}
+
+  <c-layout.spacer.small/>
+  
+  <c-layout.stack justify="center">
+    <c-form method="post" action="">
+      {% csrf_token %}
+      <c-button.block type="submit" colour="primary">
+        {% trans "Continue" %}
+      </c-button.block>
+    </c-form>
+    <c-layout.spacer.small/>
+    <c-text.small>
+      <c-link href="{% url 'account_login' %}" colour="base-content">← {% trans "Back to login" %}</c-link>
+    </c-text.small>
+  </c-layout.stack>
+</c-layout.stack>
+{% endblock content %}

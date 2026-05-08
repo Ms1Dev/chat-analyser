@@ -1,0 +1,51 @@
+{% extends "account/base_entrance.html" %}
+{% load i18n %}
+{% load account %}
+{% load allauth %}
+
+{% block head_title %}
+  {% trans "Confirm Email Address" %}
+{% endblock head_title %}
+
+{% block content %}
+  <c-layout.stack justify="center">
+    <c-header.large>{% trans "Confirm Email Address" %}</c-header.large>
+    <c-layout.spacer.small/>
+
+    {% if confirmation %}
+      {% user_display confirmation.email_address.user as user_display %}
+      {% if can_confirm %}
+        <c-text.small justify="center">
+          {% trans "Please confirm that " %} <c-link href="mailto:{{ confirmation.email_address.email }}" colour="primary">{{ confirmation.email_address.email }}</c-link> {% trans "is an email address for user " %} {{ user_display }}.
+        </c-text.small>
+
+        <c-form method="post" action="{% url 'account_confirm_email' confirmation.key %}" fields="form.visible_fields">
+          {% csrf_token %}
+          {{ redirect_field }}
+          <c-button.block type="submit" colour="primary">
+            {% trans 'Confirm' %}
+          </c-button.block>
+        </c-form>
+
+      {% else %}
+        <c-text.small justify="center">
+          {% trans "Unable to confirm {{ email }} because it is already confirmed by a different account." %}
+        </c-text.small>
+      {% endif %}
+    {% else %}
+      <c-text.small justify="center">
+        {% url 'account_email' as email_url %}
+        {% trans "This email confirmation link expired or is invalid. Please " %} <c-link href="{{ email_url }}" colour="base-content">{% trans "issue a new email confirmation request" %}</c-link>.
+      </c-text.small>
+    {% endif %}
+
+    <c-layout.spacer.small/>
+    <c-text.small justify="center">
+      <c-link href="{% url 'account_login' %}" colour="base-content">← {% trans "Back to login" %}</c-link>
+    </c-text.small>
+    <c-layout.spacer.small/>
+    <c-text.xs justify="center">
+      {% trans "Please contact us if you have any trouble verifying your email." %}
+    </c-text.xs>
+  </c-layout.stack>
+{% endblock content %}

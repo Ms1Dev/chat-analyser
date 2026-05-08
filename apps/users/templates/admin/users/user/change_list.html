@@ -1,0 +1,16 @@
+{% extends "admin/change_list.html" %}
+{% block object-tools-items %}
+    {{ block.super }}
+    <li>
+        <a href="{% url 'admin:invite-user' %}" class="addlink">
+            Invite User
+        </a>
+        <a href="{% url 'admin:fix-missing-tenancies' %}" class="addlink">
+            Fix Missing Tenancies
+        </a>
+        <a href="{% url 'admin:create-missing-buckets' %}" class="addlink">
+            Create Missing Buckets
+        </a>
+    </li>
+{% endblock %}
+

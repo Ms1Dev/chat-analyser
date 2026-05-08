@@ -1,0 +1,12 @@
+<c-container>
+    <c-slot name="title">Select Organisation</c-slot>
+    <c-form method="post" hx_target="#inner-content">
+ 
+        {% for membership in memberships %}
+            <input type="radio" checked=membership.id == active_membership.id name="membership" value={{ membership.id }} id="membership-{{ membership.id }}">
+            <label for="membership-{{ membership.id }}">{{ membership.organisation.name }}</label>
+        {% endfor %}
+        
+        <c-button.filled type="submit">Save</c-button.filled>
+    </c-form>
+</c-container>

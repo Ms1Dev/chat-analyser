@@ -30,6 +30,13 @@
   {% endif %}
 
 
+  {% if onboarding_type != "invite_only" %}
+
+    <c-layout.spacer.small/>
+    <c-text.small justify="center">
+      {% trans "Don't have an account?" %} <c-link href="{{ signup_url }}" colour="primary">{% trans "Sign up" %}</c-link>.
+    </c-text.small>
+  {% endif %}
 
   {% if SOCIALACCOUNT_ENABLED %}
     {% include "socialaccount/snippets/login.html" with signup=False %}

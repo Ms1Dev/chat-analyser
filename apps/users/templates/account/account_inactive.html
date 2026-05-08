@@ -1,0 +1,22 @@
+{% extends "allauth/layouts/entrance.html" %}
+{% load i18n %}
+{% load allauth %}
+{% block head_title %}
+    {% translate "Account Inactive" %}
+{% endblock head_title %}
+
+{% block content %}
+
+    <c-layout.stack justify="center">
+        <c-header.large>{% translate "Account Inactive" %}</c-header.large>
+        <c-layout.spacer.small/>
+        <c-text.small justify="center">
+            {% translate "This account is inactive. If you don't think this is correct, please contact us." %}
+        </c-text.small>
+        <c-layout.spacer.small/>
+        <c-text.small justify="center">
+            <c-link href="{% url 'account_login' %}" colour="base-content">← {% trans "Back to login" %}</c-link>
+        </c-text.small>
+    </c-layout.stack>
+
+{% endblock content %}

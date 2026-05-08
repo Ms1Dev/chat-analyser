@@ -1,0 +1,7 @@
+<c-container>
+    <c-slot name="title">Add Organisation</c-slot>
+    <c-form method="post" hx_target="#inner-content">
+        <c-button.filled type="submit">Save</c-button.filled>
+        <c-button.outline hx-get="{% url 'users:user_organisation' %}">Cancel</c-button.outline>
+    </c-form>
+</c-container>

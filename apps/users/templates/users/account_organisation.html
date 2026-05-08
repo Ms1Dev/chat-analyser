@@ -1,0 +1,9 @@
+<c-container>
+    <c-slot name="title">Organisation</c-slot>
+    <c-slot name="actions">
+        <c-button.filled hx_get="{% url 'users:new_organisation' %}" hx_target="#inner-content">New Organisation</c-button.filled>
+        <c-button.filled hx_get="{% url 'users:change_organisation' %}" hx_target="#inner-content">Change Organisation</c-button.filled>
+    </c-slot>
+    <c-form method="post" hx_target="#inner-content">
+    </c-form>
+</c-container>
