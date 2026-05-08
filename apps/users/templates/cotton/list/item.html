@@ -1,0 +1,9 @@
+<li class="list-row">
+    <div>
+        <div>{{ item.name }}</div>
+        <div class="text-xs uppercase font-semibold opacity-60">{{ item.uuid }}</div>
+        <c-button.filled hx-push-url="true" hx-get="{% url 'dashboard_project_details' item.uuid %}">View</c-button.filled>
+    </div>
+</li>
+
+<!-- TODO Add attribute list -->

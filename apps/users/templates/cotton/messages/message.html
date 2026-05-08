@@ -1,0 +1,47 @@
+{% load i18n %}
+<div 
+    role="alert" 
+    class="mb-2 alert
+            {% if message.tags == 'error' or type == 'error' %}
+            alert-error
+            {% elif message.tags == 'warning' or type == 'warning' %}
+            alert-warning
+            {% elif message.tags == 'success' or type == 'success' %}
+            alert-success            
+            {% else %}
+            alert-info 
+            {% endif %}
+            "
+>
+    <div>
+      <div class="text-sm">{{ message }}</div>
+    </div>
+    {% if not immutable %}
+    <button 
+        type="button"
+        aria-label="Close"
+        onclick="this.parentElement.remove()"
+        class="btn btn-ghost btn-xs btn-square 
+            {% if message.tags == 'error' or type == 'error' %}
+            btn-error
+            {% elif message.tags == 'warning' or type == 'warning' %}
+            btn-warning
+            {% elif message.tags == 'success' or type == 'success' %}
+            btn-success
+            {% else %}
+            btn-info 
+            {% endif %}"
+    >
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    class="h-5 w-5" 
+    fill="none" 
+    viewBox="0 0 24 24" 
+    stroke="currentColor" 
+    stroke-width="2"
+  >
+    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+</button>
+{% endif %}
+</div>

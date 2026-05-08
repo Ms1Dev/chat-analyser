@@ -1,20 +1,5 @@
-{% load static %}
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Chat Analyser{% endblock %}</title>
-    <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="{% static 'chat/tailwind.css' %}" />
-    <link rel="stylesheet" href="{% static 'chat/style.css' %}" />
-    {% block extra_head %}{% endblock %}
-  </head>
+{% extends "super_base.html" %}
+{% block body %}
   <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
     {% csrf_token %}
@@ -48,9 +33,7 @@
     </div>
 
     {% block content %}{% endblock %} {% block scripts %}{% endblock %}
-  </body>
-
-  <dialog id="analysis-modal" class="modal">
+    <dialog id="analysis-modal" class="modal">
     <div class="modal-box w-11/12 max-w-5xl h-[80vh] flex flex-col">
       <div id="analysis-modal-content" class="flex-1 min-h-0 overflow-hidden"></div>
       <div class="modal-action mt-0">
@@ -60,4 +43,6 @@
       </div>
     </div>
   </dialog>
-</html>
+  </body>
+
+{% endblock %}

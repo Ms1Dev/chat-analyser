@@ -1,0 +1,37 @@
+{% load nav %}
+
+<li>
+    {% if form_id != "None" %}
+    <a 
+        href="#" 
+        onclick={% if confirmation_message %}
+            "if (confirm('{{ confirmation_message }}')) { document.getElementById('{{ form_id }}').submit(); return false; }"
+        {% else %}
+            "document.getElementById('{{ form_id }}').submit(); return false;"
+        {% endif %}
+    >
+        {{ slot }}
+    </a>
+    {% elif method == 'get' %}
+        <a 
+            class="{% active_nav id active_main_nav %}"
+            href="{{ href }}" 
+        >
+            {{ slot }}
+        </a>
+    {% else %}
+        <a 
+            class="{% active_nav id active_main_nav %}"
+            {% if method == 'hx-post' %}
+                hx-post="{{ href }}" 
+            {% else %}
+                hx-get="{{ href }}" 
+            {% endif %}
+            hx-target="#inner-content" 
+            hx-swap="outerHTML"
+            hx-push-url="true"
+        >
+            {{ slot }}
+        </a>
+    {% endif %}
+</li>

@@ -1,0 +1,19 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Chat Analyser{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="{% static 'chat/tailwind.css' %}" />
+    <link rel="stylesheet" href="{% static 'chat/style.css' %}" />
+    {% block extra_head %}{% endblock %}
+  </head>  
+    {% block body %}{% endblock %} 
+</html>

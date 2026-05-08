@@ -1,0 +1,18 @@
+{% load filters %}
+<div class="overflow-x-auto">
+  <table class="table">
+    <thead>
+      <tr>
+        {% for header in headers %}
+          <th>{{header}}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in list %}
+          <c-table.row :item=row rowlink="{% if rowlinkurl %}{% url rowlinkurl row|attr:rowlinkattr %}{% if rowlinkargs %}{{rowlinkargs}}{% endif %}{% endif %}">
+          </c-table.row>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

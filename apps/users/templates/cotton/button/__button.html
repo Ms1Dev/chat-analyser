@@ -1,0 +1,17 @@
+<button 
+    {% if hx_get %}
+        hx-get="{{ hx_get }}"
+        hx-target="#inner-content"
+        hx-swap="{{ hx_swap | default:'innerHTML' }}"
+        hx-trigger="{{ hx_trigger | default:'click' }}"
+    {% elif href %}
+        onclick="{{ onclick }}; window.location.href='{{ href }}';"
+    {% else %}
+        onclick="{{ onclick }}"
+    {% endif %}
+    type="{{ type | default:'button' }}"
+    class="{{ class }}" 
+    name="{{ name }}"
+>
+    {{ slot }}
+</button>

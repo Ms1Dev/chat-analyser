@@ -1,0 +1,13 @@
+{% load filters %}
+
+<tr
+    {% if rowlink %}
+        hx-get="{{rowlink}}"
+        hx-target="#inner-content"
+        class="hover:bg-base-300 cursor-pointer"
+    {% endif %}
+>
+    {% for column in columns %}
+        <c-table.cell>{{ item|attr:column }}</c-table.cell>
+    {% endfor %}
+</tr>

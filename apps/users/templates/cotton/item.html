@@ -1,0 +1,22 @@
+{% if item.type == "link" %}
+
+    <c-main-nav.link 
+        id="{{ item.id }}"
+        href="{{ item.url }}" 
+        active="{% if item.active %}true{% else %}false{% endif %}" 
+        method="{{ item.method }}" 
+        form_id={{ item.form_id }}
+        confirmation_message="{{ item.confirmation_message }}"
+    >
+        {{ item.label }}
+    </c-main-nav.link>
+
+{% elif item.type == "collapsible" %}
+    <c-main-nav.collapsible label="{{ item.label }}" url="{{ item.url }}" active="{% if item.active %}true{% else %}false{% endif %}">
+        {% for item in item.items %}
+            <c-main-nav.item></c-main-nav.item>
+        {% endfor %}
+    </c-main-nav.collapsible>
+{% else %}
+    {{ slot }}
+{% endif %}

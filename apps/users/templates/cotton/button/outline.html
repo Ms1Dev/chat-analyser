@@ -1,0 +1,3 @@
+{% with colour=colour|default:"primary" %}
+    {% include "cotton/button/__button.html" with class="btn btn-outline-"|add:colour %}
+{% endwith %}

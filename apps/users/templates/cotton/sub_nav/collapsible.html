@@ -1,0 +1,8 @@
+<li>
+    <details {% if active == 'true' %}open{% endif %}>
+      <summary>{{ label }}</summary>
+      <ul>
+        {{ slot }}
+      </ul>
+    </details>
+</li>

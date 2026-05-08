@@ -1,0 +1,9 @@
+{% load filters %}
+
+{% if not columns %}
+    {% model_fields list.model as columns %}
+{% endif %}
+
+{% model_labels list.model columns as headers %}
+
+{% include "cotton/table.html" %}

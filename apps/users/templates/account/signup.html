@@ -1,81 +1,35 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign up</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f0f2f5;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card {
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      padding: 32px;
-      width: 100%;
-      max-width: 360px;
-    }
-    h1 { font-size: 18px; font-weight: 600; color: #111827; margin-bottom: 24px; }
-    label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 4px; }
-    input[type=text], input[type=password], input[type=email] {
-      display: block;
-      width: 100%;
-      padding: 8px 11px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-size: 14px;
-      font-family: inherit;
-      outline: none;
-      margin-bottom: 16px;
-    }
-    input:focus { border-color: #6366f1; }
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 9px;
-      background: #6366f1;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      margin-top: 8px;
-    }
-    .btn:hover { background: #4f46e5; }
-    .footer { margin-top: 20px; text-align: center; font-size: 13px; color: #6b7280; }
-    .footer a { color: #6366f1; text-decoration: none; }
-    .footer a:hover { text-decoration: underline; }
-    ul.errorlist { list-style: none; color: #ef4444; font-size: 13px; margin-bottom: 8px; }
-    .non-field-errors { margin-bottom: 16px; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Create account</h1>
-    <form method="post">
-      {% csrf_token %}
-      {% if form.non_field_errors %}
-        <ul class="errorlist non-field-errors">
-          {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
-        </ul>
-      {% endif %}
-      {% for field in form %}
-        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-        {{ field }}
-        {{ field.errors }}
-      {% endfor %}
-      <button type="submit" class="btn">Create account</button>
-    </form>
-    <div class="footer">Already have an account? <a href="{% url 'account_login' %}">Sign in</a></div>
-  </div>
-</body>
-</html>
+{% extends "account/base_entrance.html" %}
+{% load allauth i18n %}
+
+{% block head_title %}
+  {% trans "Sign Up" %}
+{% endblock head_title %}
+
+{% block content %}
+  <c-layout.stack justify="center">
+    <c-header.large>{% trans "Sign Up" %}</c-header.large>
+    <c-layout.spacer.small/>
+    <c-text.small>
+      {% trans "Already have an account?" %} <c-link href="{{ login_url }}" colour="primary">{% trans "Sign in" %}</c-link>.
+    </c-text.small>
+  </c-layout.stack>
+
+  <c-layout.spacer.small/>
+
+  {% if not SOCIALACCOUNT_ONLY %}
+    {% url 'account_signup' as action_url %}
+    <c-form method="post" action="{{ action_url }}" fields=form.visible_fields >
+      
+      {{ redirect_field }}
+
+      <c-button.block type="submit" colour="primary">
+        {% trans "Sign Up" %}
+      </c-button.block>
+    </c-form>
+  {% endif %}
+
+  {% if SOCIALACCOUNT_ENABLED %}
+    {% include "socialaccount/snippets/login.html" with signup=True %}
+  {% endif %}
+  
+{% endblock content %}

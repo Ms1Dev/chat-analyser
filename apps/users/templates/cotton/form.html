@@ -1,0 +1,26 @@
+<form method="{{ method }}" action="{{ action }}" class="space-y-4 w-full">
+    {% csrf_token %}
+    {% for error in form.non_field_errors %}
+    <c-messages.message message="{{ error }}" type="error" immutable="true"></c-messages.message>
+    {% endfor %}
+    <div class="space-y-2">
+        {% for field in form.visible_fields %}
+        <div>
+            {% if field.errors %}
+            {% for error in field.errors %}
+            <c-messages.message message="{{ error }}" type="error" immutable="true"></c-messages.message>
+            {% endfor %}
+            {% endif %}
+            <c-form.input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+                label="{{ field.label }}"
+                value="{{ field.value|default_if_none:'' }}"
+                required="{% if field.field.widget.attrs.required %}true{% endif %}"
+                disabled="{% if field.field.widget.attrs.disabled %}true{% endif %}"
+                readonly="{% if field.field.widget.attrs.readonly %}true{% endif %}"
+            />
+        </div>
+        {% endfor %}
+        {{ input_fields }}
+    </div>
+    {{ slot }}
+</form>
