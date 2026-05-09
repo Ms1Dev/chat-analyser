@@ -3,39 +3,19 @@
   <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
     {% csrf_token %}
+    {% block global_nav %}
     <div class="navbar bg-base-100 shadow-sm">
       <div class="flex-1">
         <a href="/" class="btn btn-ghost text-xl">Chat Analyser</a>
       </div>
       <div class="flex-none">
-        <form method="post" action="{% url 'account_logout' %}" style="margin:0">
+        <form method="post" action="{% url 'account_logout' %}">
           {% csrf_token %}
-          <div class="dropdown dropdown-end" hx-inherit="false" onclick="event.stopPropagation()">
-              <div tabindex="0" role="button" class="btn m-1">
-                  Settings
-              </div>
-              <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm" onclick="document.activeElement.blur()">
-                  <li>
-                      <button
-                          hx-get="{% url 'settings' %}"
-                          hx-target="#chat-main"
-                          hx-swap="innerHTML"
-                          hx-push-url="true"
-                          class="btn-icon"
-                          title="Settings"
-                      >
-                          Agent config
-                      </button>
-                  </li>
-                  <li>
-                      <button type="submit" class="btn-icon" title="Sign out">Log out</button>
-                  </li>
-              </ul>
-          </div>
-        </div>
+          <button type="submit" class="btn btn-ghost">Log out</button>
         </form>
       </div>
     </div>
+    {% endblock %}
 
     {% block content %}{% endblock %} {% block scripts %}{% endblock %}
     <dialog id="analysis-modal" class="modal">

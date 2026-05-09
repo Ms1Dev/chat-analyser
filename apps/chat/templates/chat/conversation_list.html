@@ -1,42 +1,93 @@
 
-<ul id="conversation-list" {% if oob %}hx-swap-oob="true"{% endif %} class="menu rounded-box w-56">
-{% for convo in conversations %}
-    <li id="convo-item-{{ convo.id }}">
-        <button
-            data-convo-id="{{ convo.id }}"
-            hx-get="{% url 'conversation-messages' convo.id %}"
+
+  <div class="drawer-side is-drawer-close:overflow-visible">
+    <label for="my-drawer-4" aria-label="close sidebar" class="drawer-overlay"></label>
+    <div class="flex min-h-full flex-col bg-base-200 is-drawer-close:w-14 is-drawer-open:w-64 overflow-hidden">
+
+      <!-- Sidebar toggle -->
+      <div class="flex justify-end p-1">
+        <label for="my-drawer-4" aria-label="toggle sidebar" class="btn btn-square btn-ghost">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="size-6"><path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path><path d="M9 4v16"></path><path d="M14 10l2 2l-2 2"></path></svg>
+        </label>
+      </div>
+
+      <!-- Top nav items -->
+      <ul class="menu w-full">
+
+        <!-- New Chat -->
+        <li>
+          <a href="/" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="New Chat">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="size-4 shrink-0"><path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4"></path><path d="M13.5 6.5l4 4"></path></svg>
+            <span class="is-drawer-close:hidden">New Chat</span>
+          </a>
+        </li>
+
+        <!-- Agent Config -->
+        <li>
+          <button
+            hx-get="{% url 'settings' %}"
             hx-target="#chat-main"
             hx-swap="innerHTML"
             hx-push-url="true"
-            class="flex flex-row justify-between items-center convo-item{% if convo.id == active_conversation_id %} menu-active{% endif %}"
-        >
-            {{ convo.title }}
-            <div class="dropdown" hx-inherit="false" onclick="event.stopPropagation()">
-                <div tabindex="0" role="button" class="hover:bg-base-200 rounded px-2 py-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
+            class="is-drawer-close:tooltip is-drawer-close:tooltip-right"
+            data-tip="Agent Config"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="size-4 shrink-0"><path d="M20 7h-9"></path><path d="M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg>
+            <span class="is-drawer-close:hidden">Agent Config</span>
+          </button>
+        </li>
+
+        <!-- Chats (placeholder) -->
+        <li>
+          <button class="is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Chats" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="size-4 shrink-0"><path d="M21 15a2 2 0 0 1 -2 2H7l-4 4V5a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2z"></path></svg>
+            <span class="is-drawer-close:hidden">Chats</span>
+          </button>
+        </li>
+
+      </ul>
+
+      <!-- Recents — hidden when collapsed -->
+      <div class="is-drawer-close:hidden flex flex-col flex-1 min-h-0">
+        <div class="px-4 py-2 text-xs font-semibold opacity-50 uppercase tracking-wider">Recents</div>
+        <ul id="conversation-list" {% if oob %}hx-swap-oob="true"{% endif %} class="menu w-full overflow-y-auto flex-1">
+          {% for convo in conversations %}
+          <li id="convo-item-{{ convo.id }}" class="overflow-hidden min-w-0">
+            <button
+              data-convo-id="{{ convo.id }}"
+              hx-get="{% url 'conversation-messages' convo.id %}"
+              hx-target="#chat-main"
+              hx-swap="innerHTML"
+              hx-push-url="true"
+              class="w-full flex-row justify-between items-center overflow-hidden{% if convo.id == active_conversation_id %} menu-active{% endif %}"
+            >
+              <span class="truncate min-w-0 flex-1">{{ convo.title }}</span>
+              <div class="dropdown shrink-0" hx-inherit="false" onclick="event.stopPropagation()">
+                <div tabindex="0" role="button" class="hover:bg-base-200 rounded p-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z" />
+                  </svg>
                 </div>
                 <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
-                    <li>
-                        <a
-                            hx-delete="{% url 'conversation-delete' convo.id %}"
-                            hx-target="#convo-item-{{ convo.id }}"
-                            hx-swap="delete"
-                            hx-push-url="false"
-                        >
-                            Delete
-                        </a>
-                    </li>
+                  <li>
+                    <a
+                      hx-delete="{% url 'conversation-delete' convo.id %}"
+                      hx-target="#convo-item-{{ convo.id }}"
+                      hx-swap="delete"
+                      hx-push-url="false"
+                    >
+                      Delete
+                    </a>
+                  </li>
                 </ul>
-            </div>
-        </button>
-    </li>
-    {% empty %}
-    
-    <div class="convo-item
-        "><em>No conversations yet</em>
-    </div>
+              </div>
+            </button>
+          </li>
+          {% empty %}
+          <li><span class="text-sm opacity-50 px-4 py-2">No conversations yet</span></li>
+          {% endfor %}
+        </ul>
+      </div>
 
-{% endfor %}
-</ul>
+    </div>
+  </div>

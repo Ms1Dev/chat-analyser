@@ -78,8 +78,17 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
+}
+
+/* Shift chat-main left by half the collapsed sidebar width so content
+   appears visually centred in the full viewport, not just drawer-content */
+@media (width >= 64rem) {
+  .drawer-toggle:not(:checked) ~ .drawer-content .chat-main {
+    transform: translateX(-1.75rem);
+  }
 }
 
 
