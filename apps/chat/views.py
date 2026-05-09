@@ -189,15 +189,20 @@ def settings(request):
         request.POST.get('model_choice') if request.method == 'POST' else None
     ) or agent.model
 
+    conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
+
     ctx = {
         'form': form,
         'current_provider_models': current_provider_models,
         'current_model': current_model,
     }
+
     if request.headers.get('HX-Request'):
-        return render(request, 'chat/settings.html', ctx)
+        oob_ctx = {'conversations': conversations, 'active_conversation_id': None}
+        oob_html = render_to_string('chat/partials/oob-conversation-list.html', oob_ctx, request=request)
+        return HttpResponse(render_to_string('chat/settings.html', ctx, request=request) + oob_html)
     conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
-    return render(request, 'chat/index.html', {**ctx, 'conversations': conversations, 'show_settings': True})
+    return render(request, 'chat/index.html', {**ctx, 'conversations': conversations, 'show_settings': True, 'active_conversation_id': None})
 
 
 @login_required
