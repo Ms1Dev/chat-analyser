@@ -8,27 +8,32 @@
         <a href="/" class="btn btn-ghost text-xl">Chat Analyser</a>
       </div>
       <div class="flex-none">
-        <ul class="menu menu-horizontal px-1">
-          <li>
-            <a
-              hx-get="{% url 'settings' %}"
-              hx-target="#chat-main"
-              hx-swap="innerHTML"
-              hx-push-url="true"
-              class="btn-icon"
-              title="Settings"
-            >⚙</a>
-          </li>
-          <li>
-            <button class="btn-icon" id="dark-toggle" title="Toggle dark mode">☽</button>
-          </li>
-          <li>
-            <form method="post" action="{% url 'account_logout' %}" style="margin:0">
-              {% csrf_token %}
-              <button type="submit" class="btn-icon" title="Sign out">⏻</button>
-            </form>
-          </li>
-        </ul>
+        <form method="post" action="{% url 'account_logout' %}" style="margin:0">
+          {% csrf_token %}
+          <div class="dropdown dropdown-end" hx-inherit="false" onclick="event.stopPropagation()">
+              <div tabindex="0" role="button" class="btn m-1">
+                  Settings
+              </div>
+              <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm" onclick="document.activeElement.blur()">
+                  <li>
+                      <button
+                          hx-get="{% url 'settings' %}"
+                          hx-target="#chat-main"
+                          hx-swap="innerHTML"
+                          hx-push-url="true"
+                          class="btn-icon"
+                          title="Settings"
+                      >
+                          Agent config
+                      </button>
+                  </li>
+                  <li>
+                      <button type="submit" class="btn-icon" title="Sign out">Log out</button>
+                  </li>
+              </ul>
+          </div>
+        </div>
+        </form>
       </div>
     </div>
 
