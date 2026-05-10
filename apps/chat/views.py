@@ -1,6 +1,7 @@
 from email.mime import message
 import json
 import os
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -62,6 +63,20 @@ def start(request):
 def user_message(request, conversation_id):
     message_content = request.POST.get("message")
     convo = get_object_or_404(Conversation, id=conversation_id, user=request.user)
+
+    limit = getattr(settings, 'FREE_MESSAGE_LIMIT', None)
+    if limit is not None:
+        used = Message.objects.filter(conversation__user=request.user, role='user').count()
+        if used >= limit:
+            input_html = render_to_string(
+                "chat/input.html", {"conversation_id": conversation_id, "oob": True, "disabled": False}, request=request
+            )
+            error_html = (
+                '<div hx-swap-oob="afterbegin:#chat-messages">'
+                '<div class="alert alert-error my-2">'
+                'You\'ve reached the free message limit. Thanks for trying the app!</div></div>'
+            )
+            return HttpResponse(input_html + error_html)
 
     input_html = render_to_string(
         "chat/input.html", {"conversation_id": conversation_id, "disabled": True}, request=request
