@@ -9,13 +9,18 @@ WORKDIR /app
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq-dev \
+    libpq-dev nodejs npm \
     && rm -rf /var/lib/apt/lists/*
+
+COPY package.json package-lock.json* ./
+RUN npm install
 
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen
 
 COPY . .
+
+RUN npm run build
 
 EXPOSE 8000
 
