@@ -100,10 +100,10 @@
   function toggleDark() {
     setDark(!document.body.classList.contains("dark"));
   }
-
+{% comment %} 
   if (localStorage.getItem("dark")) setDark(true);
   document.getElementById("dark-toggle").addEventListener("click", toggleDark);
-
+ {% endcomment %}
 
   function scrollChat() {
     const msgs = document.getElementById("chat-messages");

@@ -19,4 +19,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "uv run manage.py migrate --no-input && uv run manage.py collectstatic --no-input && gunicorn chat_analyser.wsgi:application --bind 0.0.0.0:8000 --worker-class gthread --workers 2 --threads 4"]
+CMD ["sh", "-c", "uv run manage.py migrate --no-input && uv run manage.py collectstatic --no-input && uv run gunicorn chat_analyser.wsgi:application --bind 0.0.0.0:8000 --worker-class gthread --workers 2 --threads 4"]   
