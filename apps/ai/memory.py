@@ -6,8 +6,8 @@ memory = Memory.from_config({
     "vector_store": {
         "provider": "qdrant",
         "config": {
-            "host": os.environ.get("QDRANT_HOST", "localhost"),
-            "port": int(os.environ.get("QDRANT_PORT", "6333")),
+            **( {"url": os.environ["QDRANT_URL"]} if os.environ.get("QDRANT_URL")
+                else {"host": os.environ.get("QDRANT_HOST", "localhost"), "port": int(os.environ.get("QDRANT_PORT", "6333"))} ),
             "api_key": os.environ.get("QDRANT_API_KEY"),
             "collection_name": "mem0_memories",
             "embedding_model_dims": 1536,
