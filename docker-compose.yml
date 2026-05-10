@@ -47,7 +47,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DEBUG: "true"
+      DEBUG: "True"
       DATABASE_URL: postgres://chat_analyser:chat_analyser@db:5432/chat_analyser
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
