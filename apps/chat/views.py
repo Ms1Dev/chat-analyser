@@ -103,8 +103,9 @@ def conversation_list(request):
 
 
 
+@login_required
 def analysis_modal_content(request, message_id):
-    msg = get_object_or_404(Message, id=message_id)
+    msg = get_object_or_404(Message, id=message_id, conversation__user=request.user)
     message = { 
         'id': msg.id,
         'role': msg.role,
