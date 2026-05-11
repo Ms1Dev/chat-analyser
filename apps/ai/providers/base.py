@@ -15,12 +15,12 @@ class BaseProvider(ABC):
     # replace with a threshold= arg on memory.search() and remove the manual filter.
     SIMILARITY_THRESHOLD = 0.35
 
-    def __init__(self, message_content, conversation_id, config: dict):
+    def __init__(self, message_content, conversation_id, config: dict, user_id: int | None = None):
         self._config = config
         self.MODEL = config.get('model', self.MODEL)
         self.client = self._get_client()
         self.conversation_id = conversation_id
-        self.conversation = Conversation.objects.get(id=conversation_id) if conversation_id else None
+        self.conversation = Conversation.objects.get(id=conversation_id, user_id=user_id) if conversation_id else None
         self.user_id = "user_" + str(self.conversation.user_id if self.conversation else None)
         self.message = self._persist_message(role="user", content=message_content)
         self.message_content = message_content

@@ -16,7 +16,7 @@ _PROVIDERS = {
 
 def run_chat_inference(user_id: int, message: str, conversation_id: str, config: dict) -> None:
     provider_cls = _PROVIDERS.get(config.get('provider', 'anthropic'), AnthropicProvider)
-    provider = provider_cls(message, conversation_id, config)
+    provider = provider_cls(message, conversation_id, config, user_id=user_id)
     for kind, chunk in provider.stream_response():
         if kind == "text":
             publish(user_id, {"type": "chat_token", "args": {"text": chunk}})
