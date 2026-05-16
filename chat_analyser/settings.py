@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     "django_htmx",
-    
+    "anymail",
     'apps.ai',
     'apps.agents',
     'apps.relay',
@@ -166,3 +166,16 @@ MAX_FREE_USERS = 50
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
+
+
+if os.environ.get("RESEND_API_KEY", default=None):
+    DEFAULT_FROM_EMAIL = "Chat Analyser <admin@portcyan.com>"
+    SERVER_EMAIL = DEFAULT_FROM_EMAIL
+    EMAIL_SUBJECT_PREFIX = "Chat Analyser "
+    ACCOUNT_EMAIL_SUBJECT_PREFIX = EMAIL_SUBJECT_PREFIX
+    EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
+    ANYMAIL = {
+        "RESEND_API_KEY": os.environ.get("RESEND_API_KEY", default=""),
+    }
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
