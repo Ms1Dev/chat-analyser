@@ -154,7 +154,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 ACCOUNT_EMAIL_REQUIRED = False
-ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_ADAPTER = 'apps.users.adapter.AccountAdapter'
 
 FREE_MESSAGE_LIMIT = 100
