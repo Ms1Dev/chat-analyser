@@ -1,6 +1,35 @@
+
+x-web:
+  build: .
+  restart: always
+  depends_on:
+    db:
+      condition: service_healthy
+    qdrant:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  
+
 services:
   web:
-    build: .
-    restart: always
+    <<: *x-web
     ports:
       - "8000:8000"
+    command: /app/start/web
+  
+  
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  celery_worker:
+    <<: *x-web
+    command: /app/start/celery/worker

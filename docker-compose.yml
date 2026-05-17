@@ -1,3 +1,33 @@
+
+x-web: &x-web
+  build: .
+  command: sh -c "uv run manage.py migrate --no-input && uv run manage.py runserver 0.0.0.0:8000"
+  env_file:
+    - .env
+  volumes:
+    - .:/app
+    - /app/.venv
+  environment:
+    DEBUG: "True"
+    DATABASE_URL: postgres://chat_analyser:chat_analyser@db:5432/chat_analyser
+    SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+    OPENAI_API_KEY: ${OPENAI_API_KEY}
+    POSTGRES_DB: chat_analyser
+    POSTGRES_USER: chat_analyser
+    POSTGRES_PASSWORD: chat_analyser
+    POSTGRES_HOST: db
+    QDRANT_HOST: qdrant
+    DJANGO_SETTINGS_MODULE: chat_analyser.settings
+
+  depends_on:
+    db:
+      condition: service_healthy
+    qdrant:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -37,32 +67,31 @@ services:
     command: sh -c "npm install --silent && npm run watch"
 
   web:
-    build: .
-    command: sh -c "uv run manage.py migrate --no-input && uv run manage.py runserver 0.0.0.0:8000"
-    env_file:
-      - .env
-    volumes:
-      - .:/app
-      - /app/.venv
+    <<: *x-web
     ports:
       - "8000:8000"
-    environment:
-      DEBUG: "True"
-      DATABASE_URL: postgres://chat_analyser:chat_analyser@db:5432/chat_analyser
-      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      POSTGRES_DB: chat_analyser
-      POSTGRES_USER: chat_analyser
-      POSTGRES_PASSWORD: chat_analyser
-      POSTGRES_HOST: db
-      QDRANT_HOST: qdrant
 
+  
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  celery_worker:
+    <<: *x-web
+    command: /app/start/celery/worker
     depends_on:
-      db:
-        condition: service_healthy
-      qdrant:
-        condition: service_healthy
+      - redis
+      - web
+
 
 volumes:
   postgres_data:
   qdrant_data:
+  redis_data:

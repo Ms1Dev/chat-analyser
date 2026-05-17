@@ -1,28 +1,16 @@
-import threading
-from queue import Queue
+import json
 
-_lock = threading.Lock()
-_clients: dict[int, list[Queue]] = {}
+import redis
+from django.conf import settings
 
-
-def register(user_id: int, q: Queue) -> None:
-    with _lock:
-        _clients.setdefault(user_id, []).append(q)
-
-
-def unregister(user_id: int, q: Queue) -> None:
-    with _lock:
-        if user_id in _clients:
-            try:
-                _clients[user_id].remove(q)
-            except ValueError:
-                pass
-            if not _clients[user_id]:
-                del _clients[user_id]
+_redis = redis.from_url(settings.REDIS_URL)
 
 
 def publish(user_id: int, event: dict) -> None:
-    with _lock:
-        clients = list(_clients.get(user_id, []))
-    for q in clients:
-        q.put(event)
+    _redis.publish(f"relay:{user_id}", json.dumps(event))
+
+
+def subscribe(user_id: int):
+    pubsub = _redis.pubsub()
+    pubsub.subscribe(f"relay:{user_id}")
+    return pubsub
