@@ -3,10 +3,6 @@ x-web:
   build: .
   restart: always
   depends_on:
-    db:
-      condition: service_healthy
-    qdrant:
-      condition: service_healthy
     redis:
       condition: service_healthy
   
@@ -18,7 +14,7 @@ services:
       - "8000:8000"
     command: /app/start/web
   
-  
+
   redis:
     image: redis:7-alpine
     volumes:
@@ -33,3 +29,7 @@ services:
   celery_worker:
     <<: *x-web
     command: /app/start/celery/worker
+
+
+volumes:
+  redis_data:
