@@ -1,5 +1,5 @@
 
-x-web:
+x-web: &x-web
   build: .
   restart: always
   depends_on:
