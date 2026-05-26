@@ -22,4 +22,5 @@ dependencies = [
     "django-anymail[resend]>=15.0",
     "redis>=7.4.0",
     "celery>=5.6.3",
+    "crispy-tailwind>=1.0.3",
 ]

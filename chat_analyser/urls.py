@@ -21,6 +21,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path('', include('apps.chat.urls')),
+    path('users/', include('apps.users.urls', namespace='users')),
     path('relay/', include('apps.relay.urls')),
     path('__reload__/', include('django_browser_reload.urls')),
 ]

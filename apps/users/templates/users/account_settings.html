@@ -1,4 +1,21 @@
-{% component "details2" %}
-{% endcomponent %}
-{% component "change_password" %}
-{% endcomponent %}
+{% extends "chat/base.html" %}
+
+{% block content %}
+<div
+    hx-get="{% url "account_change_password" %}"
+    hx-trigger="load"
+    hx-boost="true"
+    hx-push-url="false"
+    hx-target="this"
+>
+</div>
+
+<div
+    hx-get="{% url "account_email" %}"
+    hx-trigger="load"
+    hx-boost="true"
+    hx-push-url="false"
+    hx-target="this"
+>
+</div>
+{% endblock %}
