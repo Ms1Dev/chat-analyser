@@ -5,5 +5,5 @@ from apps.users.views import AccountSettings
 app_name = 'users'
 
 urlpatterns = [
-    path('settings/', AccountSettings, name='user-settings'),
+    path('settings/', AccountSettings, name='user-settings')
 ]

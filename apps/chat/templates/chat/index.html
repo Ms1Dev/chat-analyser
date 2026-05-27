@@ -2,7 +2,7 @@
 
 {% block global_nav %}{% endblock %}
 
-{% block content %}
+{% block main %}
 <div class="drawer lg:drawer-open h-screen">
   <input id="my-drawer-4" type="checkbox" class="drawer-toggle" />
   <div class="drawer-content flex flex-col h-full overflow-hidden relative">
@@ -72,7 +72,8 @@
   {% include "chat/conversation_list.html" %}
 </div>
 
-{% endblock %} {% block scripts %}
+{% endblock %}
+{% block scripts %}
 <script type="module" src="{% static 'chat/chat.js' %}"></script>
 
 <script>

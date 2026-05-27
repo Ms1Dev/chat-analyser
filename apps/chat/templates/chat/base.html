@@ -4,7 +4,7 @@
 
     {% csrf_token %}
     {% block global_nav %}
-    <div class="navbar bg-base-100 shadow-sm">
+    <div class="navbar bg-base-100 shadow-sm shrink-0">
       <div class="flex-1">
         <a href="/" class="btn btn-ghost text-xl">Chat Analyser</a>
       </div>
@@ -17,7 +17,13 @@
     </div>
     {% endblock %}
 
-    {% block content %}{% endblock %} {% block scripts %}{% endblock %}
+    {% block main %}
+    <div class="flex-1 min-h-0 overflow-y-auto">
+      {% block content %}{% endblock %}
+    </div>
+    {% endblock %}
+
+    {% block scripts %}{% endblock %}
     <dialog id="analysis-modal" class="modal">
     <div class="modal-box w-11/12 max-w-5xl h-[80vh] flex flex-col">
       <div id="analysis-modal-content" class="flex-1 min-h-0 overflow-hidden"></div>
