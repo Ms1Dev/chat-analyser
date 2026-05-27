@@ -81,6 +81,7 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  position: relative;
 }
 
 /* Shift chat-main left by half the collapsed sidebar width so content
@@ -94,11 +95,15 @@ body {
 
 
 .chat-input-row {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   gap: 8px;
   padding: 12px 16px;
   border-top: 1px solid #e5e7eb;
-  flex-shrink: 0;
+  z-index: 1;
 }
 
 .chat-input {

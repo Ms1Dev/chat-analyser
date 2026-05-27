@@ -1,94 +1,45 @@
 {% extends "chat/base.html" %} {% load static %}
 
-{% block global_nav %}{% endblock %}
-
 {% block main %}
-<div class="drawer lg:drawer-open h-screen">
-  <input id="my-drawer-4" type="checkbox" class="drawer-toggle" />
-  <div class="drawer-content flex flex-col h-full overflow-hidden relative">
-
-    <!-- Floating top-left: menu toggle (mobile only) + app name -->
-    <div class="absolute top-3 left-3 z-10 flex items-center gap-2">
-      <label for="my-drawer-4" class="lg:hidden btn btn-circle bg-base-100/80 backdrop-blur shadow-sm border border-base-300/50">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="size-6"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path></svg>
-      </label>
-      <a href="/" class="btn btn-sm rounded-full bg-base-100/80 backdrop-blur shadow-sm border border-base-300/50 font-semibold">
-        Chat Analyser
-      </a>
-            <div class="flex-1">
-        <a href="{% url 'users:user-settings' %}">Settings</a>
-      </div>
-    </div>
-
-    <!-- Floating logout pill (top-right) -->
-    <div class="absolute top-3 right-3 z-10 dropdown dropdown-end" hx-inherit="false" onclick="event.stopPropagation()">
-      <label tabindex="0" class="btn btn-circle bg-base-100/80 backdrop-blur shadow-sm border border-base-300/50">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="size-6"><path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2"></path><path d="M9 12h12l-3 -3"></path><path d="M18 15l3 -3"></path></svg>
-      </label>
-      <div tabindex="0" class="dropdown-content bg-base-100 rounded-box shadow-lg border border-base-300/50 p-3 mt-1 w-36" onclick="document.activeElement.blur()">
-        <p class="text-sm font-medium mb-2">Log out?</p>
-        <form method="post" action="{% url 'account_logout' %}">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-error btn-sm w-full">Confirm</button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Main chat -->
-    <div class="chat-main" id="chat-main">
-      {% if show_settings %}
-        {% include "chat/settings.html" %}
-      {% elif conversation_id %}
-      {% partialdef chat-messages inline %}
-        <div class="chat-messages flex flex-col-reverse overflow-y-auto flex-1" id="chat-messages">
-          {% for msg in messages %}
-          {% if msg.role == 'user' %}
-              {% include "chat/partials/sent.html" with message_content=msg.content %}
-          {% else %}
-              {% include "chat/partials/received.html" with message=msg %}
-          {% endif %}
-          {% endfor %}
-          {% include "chat/partials/load-more-sentinel.html" %}
-        </div>
-        <div class="chat-input-row">
-            {% include "chat/input.html" %}
-        </div>
-        {% if initial_message %}
-          <div
-              hx-post="{% url 'user-message' conversation_id %}"
-              hx-trigger="load"
-              hx-target="#chat-input"
-              hx-swap="outerHTML"
-              hx-vals='{"message": "{{ initial_message|escapejs }}"}'
-              style="display:none"
-          ></div>
-        {% endif %}
-      {% endpartialdef %}
+<!-- Main chat -->
+<div class="chat-main" id="chat-main">
+  {% if show_settings %}
+    {% include "chat/settings.html" %}
+  {% elif conversation_id %}
+  {% partialdef chat-messages inline %}
+    <div class="chat-messages flex flex-col-reverse overflow-y-auto flex-1 pb-20" id="chat-messages">
+      {% for msg in messages %}
+      {% if msg.role == 'user' %}
+          {% include "chat/partials/sent.html" with message_content=msg.content %}
       {% else %}
-        {% include "chat/start.html" %}
+          {% include "chat/partials/received.html" with message=msg %}
       {% endif %}
+      {% endfor %}
+      {% include "chat/partials/load-more-sentinel.html" %}
     </div>
-  </div>
-  {% include "chat/conversation_list.html" %}
+    <div class="chat-input-row bg-base-100">
+        {% include "chat/input.html" %}
+    </div>
+    {% if initial_message %}
+      <div
+          hx-post="{% url 'user-message' conversation_id %}"
+          hx-trigger="load"
+          hx-target="#chat-input"
+          hx-swap="outerHTML"
+          hx-vals='{"message": "{{ initial_message|escapejs }}"}'
+          style="display:none"
+      ></div>
+    {% endif %}
+  {% endpartialdef %}
+  {% else %}
+    {% include "chat/start.html" %}
+  {% endif %}
 </div>
-
 {% endblock %}
-{% block scripts %}
-<script type="module" src="{% static 'chat/chat.js' %}"></script>
 
-<script>
-  // Expand sidebar by default on large screens; persist preference
-  const _drawer = document.getElementById('my-drawer-4');
-  const _saved = localStorage.getItem('sidebar-open');
-  if (_saved !== null) {
-    _drawer.checked = _saved === '1';
-  } else if (window.matchMedia('(min-width: 64rem)').matches) {
-    _drawer.checked = true;
-  }
-  _drawer.addEventListener('change', () => {
-    localStorage.setItem('sidebar-open', _drawer.checked ? '1' : '0');
-  });
-</script>
+{% block scripts %}
+{{ block.super }}
+<script type="module" src="{% static 'chat/chat.js' %}"></script>
 
 <script type="module">
   import { api, esc } from '{% static "chat/utils.js" %}';
@@ -104,7 +55,7 @@
   function toggleDark() {
     setDark(!document.body.classList.contains("dark"));
   }
-{% comment %} 
+{% comment %}
   if (localStorage.getItem("dark")) setDark(true);
   document.getElementById("dark-toggle").addEventListener("click", toggleDark);
  {% endcomment %}
