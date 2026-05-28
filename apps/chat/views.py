@@ -241,3 +241,11 @@ def conversation_delete(request, conversation_id):
         return HttpResponse(status=200, headers={'HX-Redirect': reverse('index')})
 
     return JsonResponse({'success': True})
+
+
+
+
+def AccountSettings(request):
+    conversations = Conversation.objects.filter(user=request.user).values('id', 'title')
+
+    return render(request, "users/account_settings.html", { "conversations" : conversations })

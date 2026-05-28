@@ -3,31 +3,56 @@
   <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
     {% csrf_token %}
-    {% block global_nav %}
-    <div class="navbar bg-base-100 shadow-sm">
-      <div class="flex-1">
-        <a href="/" class="btn btn-ghost text-xl">Chat Analyser</a>
+
+    <div class="drawer lg:drawer-open h-screen">
+      <input id="my-drawer-4" type="checkbox" class="drawer-toggle" />
+      <div class="drawer-content flex flex-col h-full overflow-hidden relative">
+
+        <!-- Mobile-only: hamburger to open drawer -->
+        <label for="my-drawer-4" class="lg:hidden absolute top-3 left-3 z-10 btn btn-circle bg-base-100/80 backdrop-blur shadow-sm border border-base-300/50">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="size-6"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path></svg>
+        </label>
+
+{% block main %}
+        <div class="flex-1 min-h-0 overflow-y-auto">
+          <div class="min-h-full flex flex-col items-center justify-center p-8">
+            <div class="w-full" style="max-width: 1200px">
+              {% block content %}{% endblock %}
+            </div>
+          </div>
+        </div>
+        {% endblock %}
+
       </div>
-      <div class="flex-none">
-        <form method="post" action="{% url 'account_logout' %}">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-ghost">Log out</button>
-        </form>
-      </div>
+      {% include "chat/conversation_list.html" %}
     </div>
+
+    {% block scripts %}
+    <script>
+      // Expand sidebar by default on large screens; persist preference
+      const _drawer = document.getElementById('my-drawer-4');
+      const _saved = localStorage.getItem('sidebar-open');
+      if (_saved !== null) {
+        _drawer.checked = _saved === '1';
+      } else if (window.matchMedia('(min-width: 64rem)').matches) {
+        _drawer.checked = true;
+      }
+      _drawer.addEventListener('change', () => {
+        localStorage.setItem('sidebar-open', _drawer.checked ? '1' : '0');
+      });
+    </script>
     {% endblock %}
 
-    {% block content %}{% endblock %} {% block scripts %}{% endblock %}
     <dialog id="analysis-modal" class="modal">
-    <div class="modal-box w-11/12 max-w-5xl h-[80vh] flex flex-col">
-      <div id="analysis-modal-content" class="flex-1 min-h-0 overflow-hidden"></div>
-      <div class="modal-action mt-0">
-        <form method="dialog">
-          <button class="btn">Close</button>
-        </form>
+      <div class="modal-box w-11/12 max-w-5xl h-[80vh] flex flex-col">
+        <div id="analysis-modal-content" class="flex-1 min-h-0 overflow-hidden"></div>
+        <div class="modal-action mt-0">
+          <form method="dialog">
+            <button class="btn">Close</button>
+          </form>
+        </div>
       </div>
-    </div>
-  </dialog>
+    </dialog>
   </body>
 
 {% endblock %}
