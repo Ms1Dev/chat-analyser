@@ -23,3 +23,6 @@ manage *args:
 
 test:
     docker compose run --rm web uv run manage.py test
+
+ssh:
+    docker compose exec -it web /bin/bash
