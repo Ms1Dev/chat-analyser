@@ -61,3 +61,8 @@ class RawPrompt(models.Model):
     system = models.TextField()
     messages = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+
+class RagDocument(models.Model):
+    hash = models.CharField(max_length=255, unique=True)
