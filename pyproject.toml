@@ -29,4 +29,5 @@ dependencies = [
     "pypdf>=6.12.2",
     "docx2txt>=0.9",
     "unstructured>=0.22.31",
+    "langchain-openai>=1.2.2",
 ]

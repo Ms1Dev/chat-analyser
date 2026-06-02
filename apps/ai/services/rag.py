@@ -1,6 +1,8 @@
 
 import sys
 import os
+
+from qdrant_client import QdrantClient
 sys.path.insert(0, '/app')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'chat_analyser.settings')
 
@@ -8,6 +10,8 @@ import django
 django.setup()
 
 import hashlib
+from langchain_qdrant import QdrantVectorStore
+from langchain_openai import OpenAIEmbeddings
 
 from apps.ai.models import RagDocument
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -18,6 +22,7 @@ from langchain_community.document_loaders import (
     CSVLoader,
     UnstructuredMarkdownLoader,
 )
+
 
 def chunk_text(documents, chunk_size=512, chunk_overlap=64):
     """Splits text into chunks of specified size with overlap."""
@@ -39,25 +44,51 @@ def hash_file(file_path):
 def file_exists(hash_value):
     """Checks if a file with the given hash already exists in the database."""
     return RagDocument.objects.filter(hash=hash_value).exists()
-    
-    
-if __name__ == "__main__":
-    file_hash = hash_file("/app/apps/ai/services/test_file.txt")
+
+
+def store_chunks(chunks):
+    from qdrant_client.models import Distance, VectorParams
+
+    client = QdrantClient(url="http://qdrant:6333")
+
+    if not client.collection_exists("docs"):
+        client.create_collection(
+            collection_name="docs",
+            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+        )
+
+    vector_store = QdrantVectorStore(
+        client=client,
+        collection_name="docs",
+        embedding=OpenAIEmbeddings()
+    )
+
+    return vector_store.add_documents(chunks)
+
+
+
+def chunk_file(file_path):
+    file_hash = hash_file(file_path)
     if file_exists(file_hash):
         print("File already exists in the database.")
     else:
-        RagDocument.objects.create(hash=file_hash)
-        
-        text_loader = TextLoader("/app/apps/ai/services/test_file.txt")
+        text_loader = TextLoader(file_path)
         documents = text_loader.load()
 
         chunks = chunk_text(documents)
 
-        print(f"Total chunks: {len(chunks)}")
+        ids = store_chunks(chunks)
 
-        for i, chunk in enumerate(chunks):
-            print(f"\n--- Chunk {i+1} ---")
-            print(f"Length: {len(chunk.page_content)} chars")
-            print(chunk.page_content)
+        RagDocument.objects.create(
+            hash=file_hash,
+            chunk_ids=ids
+        )
 
+        print("File processed and chunks stored in the vector database.")
+
+
+
+    
+if __name__ == "__main__":
+    chunk_file("/app/apps/ai/services/test_file.txt")
 

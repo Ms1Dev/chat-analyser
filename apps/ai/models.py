@@ -66,3 +66,4 @@ class RawPrompt(models.Model):
 
 class RagDocument(models.Model):
     hash = models.CharField(max_length=255, unique=True)
+    chunk_ids = models.JSONField(default=list)
