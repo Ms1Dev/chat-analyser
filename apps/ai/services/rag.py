@@ -23,6 +23,7 @@ from langchain_community.document_loaders import (
     UnstructuredMarkdownLoader,
 )
 
+client = QdrantClient(url="http://qdrant:6333")
 
 def chunk_text(documents, chunk_size=512, chunk_overlap=64):
     """Splits text into chunks of specified size with overlap."""
@@ -48,8 +49,6 @@ def file_exists(hash_value):
 
 def store_chunks(chunks):
     from qdrant_client.models import Distance, VectorParams
-
-    client = QdrantClient(url="http://qdrant:6333")
 
     if not client.collection_exists("docs"):
         client.create_collection(
@@ -88,7 +87,22 @@ def chunk_file(file_path):
 
 
 
+def retrieval(query, retrieve_top=5, score_threshold=0.7):
+    if not client.collection_exists("docs"):
+        print("No documents found in the database.")
+        return []
+
+    vector_store = QdrantVectorStore(
+        client=client,
+        collection_name="docs",
+        embedding=OpenAIEmbeddings()
+    )
+
+    results = vector_store.similarity_search_with_score(query, k=retrieve_top, score_threshold=score_threshold)
+    return results
+
+    
     
 if __name__ == "__main__":
-    chunk_file("/app/apps/ai/services/test_file.txt")
+    print(retrieval("What do you know about htmx?"))
 
