@@ -8,44 +8,44 @@
 {% endblock head_title %}
 
 {% block content %}
-  <c-layout.stack justify="center">
-    <c-header.large>{% trans "Confirm Email Address" %}</c-header.large>
-    <c-layout.spacer.small/>
+  <div class="flex flex-col w-full items-center">
+    <h2 class="text-2xl font-bold text-base-content">{% trans "Confirm Email Address" %}</h2>
+    <div class="h-4 w-4 invisible"></div>
 
     {% if confirmation %}
       {% user_display confirmation.email_address.user as user_display %}
       {% if can_confirm %}
-        <c-text.small justify="center">
-          {% trans "Please confirm that " %} <c-link href="mailto:{{ confirmation.email_address.email }}" colour="primary">{{ confirmation.email_address.email }}</c-link> {% trans "is an email address for user " %} {{ user_display }}.
-        </c-text.small>
+        <p class="text-sm text-base-content/70 text-center">
+          {% trans "Please confirm that " %} <a href="mailto:{{ confirmation.email_address.email }}" class="text-primary hover:underline">{{ confirmation.email_address.email }}</a> {% trans "is an email address for user " %} {{ user_display }}.
+        </p>
 
-        <c-form method="post" action="{% url 'account_confirm_email' confirmation.key %}" fields="form.visible_fields">
+        <form method="post" action="{% url 'account_confirm_email' confirmation.key %}" class="space-y-4 w-full">
           {% csrf_token %}
           {{ redirect_field }}
-          <c-button.block type="submit" colour="primary">
+          <button type="submit" class="w-full btn btn-primary">
             {% trans 'Confirm' %}
-          </c-button.block>
-        </c-form>
+          </button>
+        </form>
 
       {% else %}
-        <c-text.small justify="center">
+        <p class="text-sm text-base-content/70 text-center">
           {% trans "Unable to confirm {{ email }} because it is already confirmed by a different account." %}
-        </c-text.small>
+        </p>
       {% endif %}
     {% else %}
-      <c-text.small justify="center">
+      <p class="text-sm text-base-content/70 text-center">
         {% url 'account_email' as email_url %}
-        {% trans "This email confirmation link expired or is invalid. Please " %} <c-link href="{{ email_url }}" colour="base-content">{% trans "issue a new email confirmation request" %}</c-link>.
-      </c-text.small>
+        {% trans "This email confirmation link expired or is invalid. Please " %} <a href="{{ email_url }}" class="text-base-content hover:underline">{% trans "issue a new email confirmation request" %}</a>.
+      </p>
     {% endif %}
 
-    <c-layout.spacer.small/>
-    <c-text.small justify="center">
-      <c-link href="{% url 'account_login' %}" colour="base-content">← {% trans "Back to login" %}</c-link>
-    </c-text.small>
-    <c-layout.spacer.small/>
-    <c-text.xs justify="center">
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-sm text-base-content/70 text-center">
+      <a href="{% url 'account_login' %}" class="text-base-content hover:underline">← {% trans "Back to login" %}</a>
+    </p>
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-xs text-base-content/70 text-center">
       {% trans "Please contact us if you have any trouble verifying your email." %}
-    </c-text.xs>
-  </c-layout.stack>
+    </p>
+  </div>
 {% endblock content %}

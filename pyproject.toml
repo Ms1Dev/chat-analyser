@@ -23,4 +23,11 @@ dependencies = [
     "redis>=7.4.0",
     "celery>=5.6.3",
     "crispy-tailwind>=1.0.3",
+    "langchain-text-splitters>=1.1.2",
+    "langchain-qdrant>=1.1.0",
+    "langchain-community>=0.4.2",
+    "pypdf>=6.12.2",
+    "docx2txt>=0.9",
+    "unstructured>=0.22.31",
+    "langchain-openai>=1.2.2",
 ]

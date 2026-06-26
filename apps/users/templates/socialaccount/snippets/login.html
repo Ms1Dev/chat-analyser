@@ -3,7 +3,7 @@
 {% load socialaccount %}
 {% get_providers as socialaccount_providers %}
 {% if socialaccount_providers %}
-    <c-layout.divider.horizontal>{% trans "or" %}</c-layout.divider.horizontal>
+    <div class="divider divider-base">{% trans "or" %}</div>
     {% include "socialaccount/snippets/provider_list.html"  %}
     {% include "socialaccount/snippets/login_extra.html" %}
 {% endif %}

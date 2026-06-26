@@ -6,30 +6,43 @@
 {% endblock head_title %}
 
 {% block content %}
-  <c-layout.stack justify="center">
-    <c-header.large>{% trans "Sign Up" %}</c-header.large>
-    <c-layout.spacer.small/>
-    <c-text.small>
-      {% trans "Already have an account?" %} <c-link href="{{ login_url }}" colour="primary">{% trans "Sign in" %}</c-link>.
-    </c-text.small>
-  </c-layout.stack>
+  <div class="flex flex-col w-full items-center">
+    <h2 class="text-2xl font-bold text-base-content">{% trans "Sign Up" %}</h2>
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-sm text-base-content/70">
+      {% trans "Already have an account?" %} <a href="{{ login_url }}" class="text-primary hover:underline">{% trans "Sign in" %}</a>.
+    </p>
+  </div>
 
-  <c-layout.spacer.small/>
+  <div class="h-4 w-4 invisible"></div>
 
   {% if not SOCIALACCOUNT_ONLY %}
     {% url 'account_signup' as action_url %}
-    <c-form method="post" action="{{ action_url }}" fields=form.visible_fields >
-      
+    <form method="post" action="{{ action_url }}" class="space-y-4 w-full">
+      {% csrf_token %}
+      {% for error in form.non_field_errors %}
+      <div role="alert" class="mb-2 alert alert-error">
+        <div class="text-sm">{{ error }}</div>
+      </div>
+      {% endfor %}
+      <div class="space-y-2">
+        {% for field in form.visible_fields %}
+        <div>
+          {% include "snippets/form_field.html" %}
+        </div>
+        {% endfor %}
+      </div>
+
       {{ redirect_field }}
 
-      <c-button.block type="submit" colour="primary">
+      <button type="submit" class="w-full btn btn-primary">
         {% trans "Sign Up" %}
-      </c-button.block>
-    </c-form>
+      </button>
+    </form>
   {% endif %}
 
   {% if SOCIALACCOUNT_ENABLED %}
     {% include "socialaccount/snippets/login.html" with signup=True %}
   {% endif %}
-  
+
 {% endblock content %}

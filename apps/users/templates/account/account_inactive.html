@@ -7,16 +7,16 @@
 
 {% block content %}
 
-    <c-layout.stack justify="center">
-        <c-header.large>{% translate "Account Inactive" %}</c-header.large>
-        <c-layout.spacer.small/>
-        <c-text.small justify="center">
-            {% translate "This account is inactive. If you don't think this is correct, please contact us." %}
-        </c-text.small>
-        <c-layout.spacer.small/>
-        <c-text.small justify="center">
-            <c-link href="{% url 'account_login' %}" colour="base-content">← {% trans "Back to login" %}</c-link>
-        </c-text.small>
-    </c-layout.stack>
+  <div class="flex flex-col w-full items-center">
+    <h2 class="text-2xl font-bold text-base-content">{% translate "Account Inactive" %}</h2>
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-sm text-base-content/70 text-center">
+      {% translate "This account is inactive. If you don't think this is correct, please contact us." %}
+    </p>
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-sm text-base-content/70 text-center">
+      <a href="{% url 'account_login' %}" class="text-base-content hover:underline">← {% trans "Back to login" %}</a>
+    </p>
+  </div>
 
 {% endblock content %}

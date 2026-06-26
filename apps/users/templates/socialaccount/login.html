@@ -6,43 +6,43 @@
 {% endblock head_title %}
 {% block content %}
 
-<c-layout.stack justify="center">
-  
+<div class="flex flex-col w-full items-center">
+
   {% if process == "connect" %}
-    <c-header.large>
+    <h2 class="text-2xl font-bold text-base-content">
       {% blocktrans with provider.name as provider %}Connect your {{ provider }} account{% endblocktrans %}
-    </c-header.large>
-    <c-layout.spacer.small/>
-    <c-text.small>
+    </h2>
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-sm text-base-content/70">
       {% blocktrans with provider.name as provider %}
         You're about to connect a new third-party account from {{ provider }} to your profile.
       {% endblocktrans %}
-    </c-text.small>
+    </p>
   {% else %}
-    <c-header.large>
+    <h2 class="text-2xl font-bold text-base-content">
       {% blocktrans with provider.name as provider %}Sign In with {{ provider }}{% endblocktrans %}
-    </c-header.large>
-    <c-layout.spacer.small/>
-    <c-text.small>
+    </h2>
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-sm text-base-content/70">
       {% blocktrans with provider.name as provider %}
         You're about to sign in using your {{ provider }} account.
       {% endblocktrans %}
-    </c-text.small>
+    </p>
   {% endif %}
 
-  <c-layout.spacer.small/>
-  
-  <c-layout.stack justify="center">
-    <c-form method="post" action="">
+  <div class="h-4 w-4 invisible"></div>
+
+  <div class="flex flex-col w-full items-center">
+    <form method="post" action="" class="space-y-4 w-full">
       {% csrf_token %}
-      <c-button.block type="submit" colour="primary">
+      <button type="submit" class="w-full btn btn-primary">
         {% trans "Continue" %}
-      </c-button.block>
-    </c-form>
-    <c-layout.spacer.small/>
-    <c-text.small>
-      <c-link href="{% url 'account_login' %}" colour="base-content">← {% trans "Back to login" %}</c-link>
-    </c-text.small>
-  </c-layout.stack>
-</c-layout.stack>
+      </button>
+    </form>
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-sm text-base-content/70">
+      <a href="{% url 'account_login' %}" class="text-base-content hover:underline">← {% trans "Back to login" %}</a>
+    </p>
+  </div>
+</div>
 {% endblock content %}

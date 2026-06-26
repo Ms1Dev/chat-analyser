@@ -1,12 +1,16 @@
-<c-container>
-    <c-slot name="title">Select Organisation</c-slot>
-    <c-form method="post" hx_target="#inner-content">
- 
-        {% for membership in memberships %}
-            <input type="radio" checked=membership.id == active_membership.id name="membership" value={{ membership.id }} id="membership-{{ membership.id }}">
-            <label for="membership-{{ membership.id }}">{{ membership.organisation.name }}</label>
-        {% endfor %}
-        
-        <c-button.filled type="submit">Save</c-button.filled>
-    </c-form>
-</c-container>
+<div class="card bg-base-100 shadow-sm m-3">
+    <div class="card-body">
+        <div class="card-actions justify-end">
+            <h2 class="card-title mr-auto">Select Organisation</h2>
+        </div>
+        <form method="post" hx-target="#inner-content" class="space-y-4 w-full">
+            {% csrf_token %}
+            {% for membership in memberships %}
+                <input type="radio" checked=membership.id == active_membership.id name="membership" value={{ membership.id }} id="membership-{{ membership.id }}">
+                <label for="membership-{{ membership.id }}">{{ membership.organisation.name }}</label>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+    </div>
+</div>

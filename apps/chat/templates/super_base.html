@@ -1,4 +1,6 @@
 {% load static %}
+{% load django_browser_reload %}
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -15,5 +17,6 @@
     <link rel="stylesheet" href="{% static 'chat/style.css' %}" />
     {% block extra_head %}{% endblock %}
   </head>  
-    {% block body %}{% endblock %} 
+    {% block body %}{% endblock %}
+    {% django_browser_reload_script %}
 </html>
