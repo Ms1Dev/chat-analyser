@@ -9,26 +9,7 @@
             {% csrf_token %}
             {% for field in form.visible_fields %}
             <div>
-                {% if field.errors %}
-                {% for error in field.errors %}
-                <div role="alert" class="mb-2 alert alert-error">
-                    <div class="text-sm">{{ error }}</div>
-                </div>
-                {% endfor %}
-                {% endif %}
-                <div class="form-control">
-                    <label class="label" for="{{ field.id_for_label }}">
-                        <span class="label-text">{{ field.label }}</span>
-                    </label>
-                    <input
-                        type="{{ field.field.widget.input_type }}"
-                        name="{{ field.html_name }}"
-                        id="{{ field.id_for_label }}"
-                        value="{{ field.value|default_if_none:'' }}"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
-                        {% if field.field.required %}required{% endif %}
-                    >
-                </div>
+                {% include "snippets/form_field.html" %}
             </div>
             {% endfor %}
             <button type="submit" class="btn btn-primary">{% trans "Update" %}</button>

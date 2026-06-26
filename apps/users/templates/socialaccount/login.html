@@ -13,7 +13,7 @@
       {% blocktrans with provider.name as provider %}Connect your {{ provider }} account{% endblocktrans %}
     </h2>
     <div class="h-4 w-4 invisible"></div>
-    <p class="text-sm text-gray-600">
+    <p class="text-sm text-base-content/70">
       {% blocktrans with provider.name as provider %}
         You're about to connect a new third-party account from {{ provider }} to your profile.
       {% endblocktrans %}
@@ -23,7 +23,7 @@
       {% blocktrans with provider.name as provider %}Sign In with {{ provider }}{% endblocktrans %}
     </h2>
     <div class="h-4 w-4 invisible"></div>
-    <p class="text-sm text-gray-600">
+    <p class="text-sm text-base-content/70">
       {% blocktrans with provider.name as provider %}
         You're about to sign in using your {{ provider }} account.
       {% endblocktrans %}
@@ -40,7 +40,7 @@
       </button>
     </form>
     <div class="h-4 w-4 invisible"></div>
-    <p class="text-sm text-gray-600">
+    <p class="text-sm text-base-content/70">
       <a href="{% url 'account_login' %}" class="text-base-content hover:underline">← {% trans "Back to login" %}</a>
     </p>
   </div>
