@@ -5,37 +5,50 @@
 {% block head_title %}{% trans "Sign In" %}{% endblock head_title %}
 
 {% block content %}
-  <c-layout.stack justify="center">
-    <c-header.large>{% trans "Sign In" %}</c-header.large>
-  </c-layout.stack>
+  <div class="flex flex-col w-full items-center">
+    <h2 class="text-2xl font-bold text-base-content">{% trans "Sign In" %}</h2>
+  </div>
 
-  <c-layout.spacer.small/>
+  <div class="h-4 w-4 invisible"></div>
 
   {% if not SOCIALACCOUNT_ONLY %}
     {% url 'account_login' as login_url %}
-    <c-form method="post" action="{{ login_url }}" fields=form.visible_fields>
-      
+    <form method="post" action="{{ login_url }}" class="space-y-4 w-full">
+      {% csrf_token %}
+      {% for error in form.non_field_errors %}
+      <div role="alert" class="mb-2 alert alert-error">
+        <div class="text-sm">{{ error }}</div>
+      </div>
+      {% endfor %}
+      <div class="space-y-2">
+        {% for field in form.visible_fields %}
+        <div>
+          {% include "snippets/form_field.html" %}
+        </div>
+        {% endfor %}
+      </div>
+
       {{ redirect_field }}
 
-      <c-text.small justify="right">
-          <c-link href="{% url 'account_reset_password' %}" colour="base-content">
-            {% trans "Forgot password?" %}
-          </c-link>
-      </c-text.small>
+      <p class="text-sm text-base-content/70 text-right">
+        <a href="{% url 'account_reset_password' %}" class="text-base-content hover:underline">
+          {% trans "Forgot password?" %}
+        </a>
+      </p>
 
-      <c-button.block type="submit" colour="primary">
+      <button type="submit" class="w-full btn btn-primary">
         {% trans "Sign In" %}
-      </c-button.block>
-    </c-form>
+      </button>
+    </form>
   {% endif %}
 
 
   {% if onboarding_type != "invite_only" %}
 
-    <c-layout.spacer.small/>
-    <c-text.small justify="center">
-      {% trans "Don't have an account?" %} <c-link href="{{ signup_url }}" colour="primary">{% trans "Sign up" %}</c-link>.
-    </c-text.small>
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-sm text-base text-center">
+      {% trans "Don't have an account?" %} <a href="{{ signup_url }}" class="text-primary hover:underline">{% trans "Sign up" %}</a>.
+    </p>
   {% endif %}
 
   {% if SOCIALACCOUNT_ENABLED %}

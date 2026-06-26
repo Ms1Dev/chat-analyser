@@ -5,16 +5,16 @@
     {% trans "Sign Up Closed" %}
 {% endblock head_title %}
 {% block content %}
-    
-    <c-layout.stack justify="center">
-        <c-header.large>{% trans "Sign Up Closed" %}</c-header.large>
-        <c-layout.spacer.small/>
-        <c-text.small>
-            {% trans "We are sorry, but the sign up is currently closed." %}
-        </c-text.small>
-        <c-layout.spacer.small/>
-        <c-text.small>
-            <c-link href="{% url 'account_login' %}" colour="base-content">← {% trans "Back to login" %}</c-link>
-        </c-text.small>
-    </c-layout.stack>
+
+  <div class="flex flex-col w-full items-center">
+    <h2 class="text-2xl font-bold text-base-content">{% trans "Sign Up Closed" %}</h2>
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-sm text-base-content/70">
+      {% trans "We are sorry, but the sign up is currently closed." %}
+    </p>
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-sm text-base-content/70">
+      <a href="{% url 'account_login' %}" class="text-base-content hover:underline">← {% trans "Back to login" %}</a>
+    </p>
+  </div>
 {% endblock content %}

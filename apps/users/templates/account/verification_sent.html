@@ -7,25 +7,25 @@
 {% endblock head_title %}
 
 {% block content %}
-  <c-layout.stack justify="center">
-    <c-header.large>
+  <div class="flex flex-col w-full items-center">
+    <h2 class="text-2xl font-bold text-base-content">
       {% trans "Verify Your Email Address" %}
-    </c-header.large>
-    <c-layout.spacer.small/>
-    <c-text.small justify="center">
+    </h2>
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-sm text-base-content/70 text-center">
       {% blocktrans %}
         We've sent you a verification link. Check your email (and spam folder) to complete your signup.
-        Contact us if it doesn’t show up soon.
+        Contact us if it doesn't show up soon.
       {% endblocktrans %}
-    </c-text.small>
-    
-    <c-layout.spacer.small/>
-    <c-text.small justify="center">
-      <c-link href="{% url 'account_login' %}" colour="base-content">← {% trans "Back to login" %}</c-link>
-    </c-text.small>
-    <c-layout.spacer.small/>
-    <c-text.xs justify="center">
+    </p>
+
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-sm text-base-content/70 text-center">
+      <a href="{% url 'account_login' %}" class="text-base-content hover:underline">← {% trans "Back to login" %}</a>
+    </p>
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-xs text-base-content/70 text-center">
       {% trans "Please contact us if you have any trouble verifying your email." %}
-    </c-text.xs>
-  </c-layout.stack>
+    </p>
+  </div>
 {% endblock content %}
