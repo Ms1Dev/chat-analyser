@@ -6,29 +6,28 @@
 {% endblock head_title %}
 
 {% block content %}
-  <c-layout.stack justify="center">
-    <c-header.large>{% trans "Sign Out" %}</c-header.large>
-    <c-layout.spacer.small/>
-    <c-text.small>
+  <div class="flex flex-col w-full items-center">
+    <h2 class="text-2xl font-bold text-base-content">{% trans "Sign Out" %}</h2>
+    <div class="h-4 w-4 invisible"></div>
+    <p class="text-sm text-gray-600">
       {% trans "Are you sure you want to sign out?" %}
-    </c-text.small>
-  </c-layout.stack>
+    </p>
+  </div>
 
-  <c-layout.spacer.small/>
-    <c-layout.hstack justify="center">
-        <c-button.outline href="/">
-            {% trans "Cancel" %}
-        </c-button.outline>
-        <c-layout.spacer.small/>
-        {% url 'account_logout' as action_url %}
-        <form method="post" action="{{ action_url }}">
-            {% csrf_token %}
-            {{ redirect_field }}
+  <div class="h-4 w-4 invisible"></div>
+  <div class="flex flex-row justify-center">
+    <a href="/" class="btn btn-outline">
+      {% trans "Cancel" %}
+    </a>
+    <div class="h-4 w-4 invisible"></div>
+    {% url 'account_logout' as action_url %}
+    <form method="post" action="{{ action_url }}">
+      {% csrf_token %}
+      {{ redirect_field }}
 
-            <c-button.filled type="submit" colour="primary">
-                {% trans "Sign Out" %}
-            </c-button.filled>
-        </form>
-        
-    </c-layout.hstack>
+      <button type="submit" class="btn btn-primary">
+        {% trans "Sign Out" %}
+      </button>
+    </form>
+  </div>
 {% endblock content %}
